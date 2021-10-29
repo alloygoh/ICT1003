@@ -76,6 +76,7 @@ LRESULT WINAPI MyMouseCallback(int nCode, WPARAM wParam, LPARAM lParam){
         break;
         case WM_MBUTTONUP:{
             printf_s("MIDDLE CLICK UP\n");
+            MyHook::Instance().UninstallHook();
         }
         break;
         case WM_MBUTTONDOWN:{
@@ -92,14 +93,13 @@ LRESULT WINAPI MyMouseCallback(int nCode, WPARAM wParam, LPARAM lParam){
         break;
 		}
 	}
-
 	/*
 	Every time that the nCode is less than 0 we need to CallNextHookEx:
 	-> Pass to the next hook
          MSDN: Calling CallNextHookEx is optional, but it is highly recommended;
          otherwise, other applications that have installed hooks will not receive hook notifications and may behave incorrectly as a result.
 	*/
-	return CallNextHookEx(MyHook::Instance().hook, nCode, wParam, lParam);
+	//return CallNextHookEx(MyHook::Instance().hook, nCode, wParam, lParam);
 }
 
 int CustomBlockInput(int duration){
@@ -110,16 +110,8 @@ int CustomBlockInput(int duration){
 }
 
 int main(){
+    //CustomBlockInput(5000);
     MyHook::Instance().InstallHook();
     return MyHook::Instance().Messsages();
 }
 
-int reg_stuf(){
-    HKEY default_key;
-    std::string reg_path = "SYSTEM\\CurrentControlSet\\Services\\USBSTOR";
-    auto result = RegOpenKeyExA(HKEY_LOCAL_MACHINE, reg_path.c_str(), 0, KEY_WRITE | KEY_QUERY_VALUE, &default_key);
-    if (result != ERROR_SUCCESS){
-        std::cout << "sad";
-    }
-    std::cout << result;
-}
