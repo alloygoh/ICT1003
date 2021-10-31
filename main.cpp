@@ -1,8 +1,9 @@
 #include "main.h"
 
 MyMod myMod = MyMod();
+MouseMod mouseMod = MouseMod();
 std::map<std::wstring, RCDOMod*> modules = {
-    { L"my_mod", &myMod }
+    { L"my_mod", &myMod }, { L"mouse_mod", &mouseMod }
 };
 
 int wmain(int argc, wchar_t * argv[]){

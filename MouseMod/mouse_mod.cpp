@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include <iostream>
+#include "mouse_mod.h"
 
 class MyHook{
 public:
@@ -76,7 +77,6 @@ LRESULT WINAPI MyMouseCallback(int nCode, WPARAM wParam, LPARAM lParam){
         break;
         case WM_MBUTTONUP:{
             printf_s("MIDDLE CLICK UP\n");
-            MyHook::Instance().UninstallHook();
         }
         break;
         case WM_MBUTTONDOWN:{
@@ -100,18 +100,18 @@ LRESULT WINAPI MyMouseCallback(int nCode, WPARAM wParam, LPARAM lParam){
          otherwise, other applications that have installed hooks will not receive hook notifications and may behave incorrectly as a result.
 	*/
 	//return CallNextHookEx(MyHook::Instance().hook, nCode, wParam, lParam);
+	return -1;
 }
 
-int CustomBlockInput(int duration){
-    BlockInput(TRUE);
-    Sleep(duration);
-    BlockInput(FALSE);
-    return 0;
-}
-
-int main(){
-    //CustomBlockInput(5000);
+void MouseMod::start(){
+    wprintf(L"Starting MouseMod\n");
     MyHook::Instance().InstallHook();
-    return MyHook::Instance().Messsages();
+    MyHook::Instance().Messsages();
 }
+
+void MouseMod::kill(){
+    wprintf(L"Killing MouseMod\n");
+    MyHook::Instance().UninstallHook();
+}
+
 
