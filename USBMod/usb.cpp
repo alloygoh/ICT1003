@@ -35,11 +35,9 @@ void setUSBState(BOOL bEnable){
     param.ClassInstallHeader.InstallFunction = DIF_PROPERTYCHANGE;
 
     if(bEnable) {
-        printf("ENABLE");
         param.StateChange = DICS_ENABLE;;
     }
     else {
-        printf("DISABLE");
         param.StateChange = DICS_DISABLE;
     }
 
@@ -50,7 +48,6 @@ void setUSBState(BOOL bEnable){
     SP_DEVINFO_DATA devInfoData = {sizeof(SP_DEVINFO_DATA)};;
     int memberIndex = 0;
     while(1){
-        printf("I AM HERE\n");
         if(!SetupDiEnumDeviceInfo(hDevInfo, memberIndex++, &devInfoData)){
             DWORD err = GetLastError();
             if(err == ERROR_NO_MORE_ITEMS){
@@ -69,7 +66,6 @@ void setUSBState(BOOL bEnable){
 
         if(!SetupDiCallClassInstaller(DIF_PROPERTYCHANGE, hDevInfo, &devInfoData)){
             printf("SetupDiCallClassInstaller: 0x%x\n", (unsigned int)GetLastError());
-            printf("0x%x\n", ERROR_IN_WOW64);
             continue;
         }
     }

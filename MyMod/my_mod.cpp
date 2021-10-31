@@ -1,7 +1,7 @@
 #include "my_mod.h"
 
 int MyMod::requireAdmin(){
-    return 1;
+    return 0;
 }
 
 void MyMod::start(){

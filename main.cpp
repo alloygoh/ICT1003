@@ -1,5 +1,7 @@
 #include "main.h"
 
+BOOL elevate();
+
 MyMod* myMod = new MyMod();
 MouseMod* mouseMod = new MouseMod();
 USBMod* usbMod = new USBMod();
@@ -9,8 +11,12 @@ std::map<std::wstring, RCDOMod*> modules = {
     { L"usb", usbMod }
 };
 
+void runModule(std::wstring moduleName){
+    (*modules.at(moduleName)).start();
+}
+
 int wmain(int argc, wchar_t * argv[]){
-    // Argument parsing
+    // Arguments
     int requireAdmin = 0;
     std::vector<std::wstring> modulesToRun;
     for(int i = 1; i < argc; ++i){
@@ -20,27 +26,22 @@ int wmain(int argc, wchar_t * argv[]){
         requireAdmin |= modules.at(moduleName)->requireAdmin();
     }
 
-    printf("RequireAdmin: %d\n", requireAdmin);
-
-    // Obtain administrator if required
+    // Admin
     if(!IsUserAnAdmin() && requireAdmin){
         elevate();
         return 0;
     }
 
-    // Look through activated modules, and do it
-    // Start modules
+    // Start
     for(std::wstring moduleName: modulesToRun){
-        // Start module
-        (*modules.at(moduleName)).start();
+        std::thread t(runModule, moduleName);
+        t.detach();
     }
 
-    // TODO: Call polling module
+    // TODO: Change to polling function
     Sleep(5000);
 
-    // Kill modules
     for(std::wstring moduleName: modulesToRun){
-        // Start module
         (*modules.at(moduleName)).kill();
     }
 
@@ -48,9 +49,22 @@ int wmain(int argc, wchar_t * argv[]){
 }
 
 /* Spawns current process as admin */
-int elevate() {
-    char buffer[1024];
-    snprintf(buffer, sizeof(buffer), "powershell -c Start-Process -Verb RunAs %s", GetCommandLineA());
-    system(buffer);
-    return 0;
+BOOL elevate() {
+    wchar_t PathProg[MAX_PATH];
+
+    if (!GetModuleFileNameW(NULL, PathProg, MAX_PATH))
+    {
+        printf("GetModuleFileName %lu\n", GetLastError());
+    }
+
+    wchar_t * parameters = GetCommandLineW() + wcslen(PathProg) + 3; // Include the two quotes + 1 space
+
+    SHELLEXECUTEINFOW shExInfo = {sizeof(shExInfo)};
+    shExInfo.lpVerb = L"runas";
+    shExInfo.lpFile = PathProg;
+    shExInfo.lpParameters = parameters;
+    shExInfo.hwnd = NULL;
+    shExInfo.nShow = SW_NORMAL;
+
+    return ShellExecuteExW(&shExInfo);
 }
