@@ -3,7 +3,7 @@
 
 class RCDOMod{
     public:
-        int requireAdmin;
+        virtual int requireAdmin() = 0;
         virtual void start() = 0;
         virtual void kill() = 0;
 };

@@ -6,7 +6,7 @@
 
 class MouseMod: public RCDOMod{
     public:
-        int requireAdmin = 0;
+        int requireAdmin();
         void start();
         void kill();
 };

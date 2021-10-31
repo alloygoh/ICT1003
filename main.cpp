@@ -1,9 +1,12 @@
 #include "main.h"
 
-MyMod myMod = MyMod();
-MouseMod mouseMod = MouseMod();
+MyMod* myMod = new MyMod();
+MouseMod* mouseMod = new MouseMod();
+USBMod* usbMod = new USBMod();
 std::map<std::wstring, RCDOMod*> modules = {
-    { L"my_mod", &myMod }, { L"mouse_mod", &mouseMod }
+    { L"my_mod", myMod },
+    { L"mouse", mouseMod },
+    { L"usb", usbMod }
 };
 
 int wmain(int argc, wchar_t * argv[]){
@@ -13,7 +16,8 @@ int wmain(int argc, wchar_t * argv[]){
     for(int i = 1; i < argc; ++i){
         std::wstring moduleName(argv[i]);
         modulesToRun.push_back(moduleName);
-        requireAdmin |= (*modules.at(moduleName)).requireAdmin;
+
+        requireAdmin |= modules.at(moduleName)->requireAdmin();
     }
 
     printf("RequireAdmin: %d\n", requireAdmin);
@@ -32,7 +36,7 @@ int wmain(int argc, wchar_t * argv[]){
     }
 
     // TODO: Call polling module
-    Sleep(1000);
+    Sleep(5000);
 
     // Kill modules
     for(std::wstring moduleName: modulesToRun){
@@ -45,18 +49,8 @@ int wmain(int argc, wchar_t * argv[]){
 
 /* Spawns current process as admin */
 int elevate() {
-    wchar_t PathProg[MAX_PATH];
-
-    if (!GetModuleFileNameW(NULL, PathProg, MAX_PATH))
-    {
-        printf("GetModuleFileName %lu\n", GetLastError());
-    }
-
-    SHELLEXECUTEINFOW shExInfo = {sizeof(shExInfo)};
-    shExInfo.lpVerb = L"runas";
-    shExInfo.lpFile = PathProg;
-    shExInfo.hwnd = NULL;
-    shExInfo.nShow = SW_NORMAL;
-
-    return ShellExecuteExW(&shExInfo);
+    char buffer[1024];
+    snprintf(buffer, sizeof(buffer), "powershell -c Start-Process -Verb RunAs %s", GetCommandLineA());
+    system(buffer);
+    return 0;
 }

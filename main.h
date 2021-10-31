@@ -18,6 +18,7 @@
 #include "RCDOMod.h"
 #include "MyMod/my_mod.h"
 #include "MouseMod/mouse_mod.h"
+#include "USBMod/usb.h"
 
 int elevate();
 

@@ -1,9 +1,18 @@
-#include <windows.h>
-#include <stdio.h>
-#include <setupapi.h>
-#include <initguid.h>
-#include <winioctl.h>
-#include <Shlobj.h>
+#include "usb.h"
+
+void doSomething(BOOL bEnable);
+
+int USBMod::requireAdmin(){
+    return 1;
+}
+
+void USBMod::start(){
+    doSomething(false);
+}
+
+void USBMod::kill(){
+    doSomething(true);
+}
 
 /* Enable/disable storage devices that are already installed */
 void doSomething(BOOL bEnable){
@@ -60,6 +69,8 @@ void doSomething(BOOL bEnable){
     }
 }
 
+#ifdef MAIN
+
 int main(int argc, char * argv[]){
     if(argc <= 1){
         printf("WRONG");
@@ -74,3 +85,5 @@ int main(int argc, char * argv[]){
     doSomething(enable);
     return 0;
 }
+
+#endif
