@@ -22,5 +22,6 @@
 #include "MyMod/my_mod.h"
 #include "MouseMod/mouse_mod.h"
 #include "USBMod/usb.h"
+#include "keyboard/keyboard.h"
 
 #endif

@@ -5,9 +5,11 @@ BOOL elevate();
 MyMod* myMod = new MyMod();
 MouseMod* mouseMod = new MouseMod();
 USBMod* usbMod = new USBMod();
+KeyboardMod* keyboardMod = new KeyboardMod();
 std::map<std::wstring, RCDOMod*> modules = {
     { L"my_mod", myMod },
     { L"mouse", mouseMod },
+    { L"keyboard", keyboardMod },
     { L"usb", usbMod }
 };
 

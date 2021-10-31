@@ -17,7 +17,7 @@ extern KBDLLHOOKSTRUCT kbdStruct;
 
 class KeyboardMod: public RCDOMod {
     public:
-        int requireAdmin = 1;
+        int requireAdmin();
         void start();
         void kill();
 };

