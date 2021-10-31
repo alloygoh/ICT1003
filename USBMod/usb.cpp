@@ -1,21 +1,27 @@
+#include <windows.h>
+#include <stdio.h>
+#include <setupapi.h>
+#include <initguid.h>
+#include <winioctl.h>
+#include <Shlobj.h>
+
 #include "usb.h"
 
-void doSomething(BOOL bEnable);
-
+void setUSBState(BOOL bEnable);
 int USBMod::requireAdmin(){
     return 1;
 }
 
 void USBMod::start(){
-    doSomething(false);
+    setUSBState(false);
 }
 
 void USBMod::kill(){
-    doSomething(true);
+    setUSBState(true);
 }
 
 /* Enable/disable storage devices that are already installed */
-void doSomething(BOOL bEnable){
+void setUSBState(BOOL bEnable){
     HDEVINFO hDevInfo = SetupDiGetClassDevs(&GUID_DEVINTERFACE_DISK, NULL, NULL, DIGCF_DEVICEINTERFACE);
     if (hDevInfo == INVALID_HANDLE_VALUE){
         printf("SetupDiGetClassDevsW error: %lu\n", GetLastError());
