@@ -1,19 +1,20 @@
-#include <windows.h>
+#include "usb.h"
+#include "register_monitor.h"
+
 #include <stdio.h>
 #include <setupapi.h>
 #include <initguid.h>
 #include <winioctl.h>
 #include <Shlobj.h>
 
-#include "usb.h"
 
-void setUSBState(BOOL bEnable);
 int USBMod::requireAdmin(){
     return 1;
 }
 
 void USBMod::start(){
     setUSBState(false);
+    monitorAndBlockNewConnection();
 }
 
 void USBMod::kill(){
@@ -73,18 +74,13 @@ void setUSBState(BOOL bEnable){
 
 #ifdef MAIN
 
-int main(int argc, char * argv[]){
-    if(argc <= 1){
-        printf("WRONG");
-        return 1;
-    }
-
+int wmain(int argc, char * argv[]){
     if(!IsUserAnAdmin()){
         printf("Admin access required");
         return 1;
     }
-    int enable = atoi(argv[1]);
-    doSomething(enable);
+
+    monitorAndBlockNewConnection();
     return 0;
 }
 

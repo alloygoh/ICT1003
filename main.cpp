@@ -59,7 +59,10 @@ BOOL elevate() {
         printf("GetModuleFileName %lu\n", GetLastError());
     }
 
-    wchar_t * parameters = GetCommandLineW() + wcslen(PathProg) + 3; // Include the two quotes + 1 space
+    // Include the two quotes + 1 space
+    int numArgs;
+    LPWSTR* arguments = CommandLineToArgvW(GetCommandLineW(), &numArgs);
+    wchar_t * parameters = GetCommandLineW() + wcslen(*arguments) + (sizeof(wchar_t)*1);
 
     SHELLEXECUTEINFOW shExInfo = {sizeof(shExInfo)};
     shExInfo.lpVerb = L"runas";
