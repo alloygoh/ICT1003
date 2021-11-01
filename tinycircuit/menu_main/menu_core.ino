@@ -31,7 +31,7 @@ typedef struct
 static const char PROGMEM mainMenuString0[] = "Date & Time";
 static const char PROGMEM mainMenuString1[] = "Brightness";
 static const char PROGMEM mainMenuString2[] = "Function Menu";
-static const char PROGMEM mainMenuString3[] = "Placeholder 1";
+static const char PROGMEM mainMenuString3[] = "TEST";
 static const char PROGMEM mainMenuString4[] = "Lorem Ipsum Dolor";
 
 static const char* const PROGMEM mainMenuStrings[] =
@@ -313,7 +313,8 @@ void mainMenu(uint8_t selection) // selection = array index of the menu item
     }
     if (selection == 3)
     {
-        //placeholder
+        //TEST
+        startBinary(1);
     }
     if (selection == 4)
     {
