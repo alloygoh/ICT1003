@@ -2,39 +2,53 @@
 Random piece of description that is being used as some form of
 documentation.
 
-## Using make
-Run make
+## Build
+Run make to build debug mode
 ```
 make
 ```
 
-To run example:
+To run release mode
 ```
-make example
+make release
 ```
 
-## Main program
-Assuming we call our program `rcdob`. The modules to activate will be
-placed at the back, separated by `<space>`.
+## Differences in modes
+Debug mode has a console window popup, while release does not.
+
+## Usage
+To run (each module is separated by space)
 ```
-.\rcdob.exe "module 1" module2 "module 3"
+.\rcdob.exe module1 "module2"
 ```
+
+To find out the module names, go to `main.cpp` and find it. (It's near
+the top of the file)
+
+## Configuration
+All configuration are set using environmental variables. [Here's how to get environment
+variables](https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/getenv-wgetenv?view=msvc-160).
+
+All environmental variables should look like this:
+`RCDO_MODULENAME_VARIABLENAME`
+
+### Connection to remote endpoint
+- `RCDO_USERAGENT` - User agent when making web requests.
+- `RCDO_SERVERNAME` - Server name to query for when making web requests.
+- `RCDO_SERVERPORT` - Server port to connect to on host `RCDO_SERVERNAME`.
+
+### Keyboard
+// To be filled in by author of module
 
 ## Modules
 Modules are all based off the interface RCDOMod (see `RCDOMod.h` for
 more information on what function or variables must be present)
 
-## Module specific configuration
-My suggestion is to use **environment variables** for configuration
-related to the module. The suggested naming format is
-`RCDO_MODULENAME_VARIABLENAME`. [Here's how to get environment
-variables](https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/getenv-wgetenv?view=msvc-160)
-
 ## Example
 I made an example module called `MyMod/` which can be referenced
 on how to include the interface to copy from.
 
-# How to add a module
+## How to add a module
 It should work if u do these steps.
 1. Add your module to the `main.h` file
 1. Make sure the module is in the map in `main.cpp`
@@ -52,3 +66,9 @@ collision with other variables used in other programs.
 
 #endif
 ```
+
+# To the person doing the keyboard input to run the computer
+U can see `run.cmd` to see what commands to run, such as how to set
+environment variables in cmd, detach the process from the parent
+console. If the binary is built in release mode, then no window will
+popup, but the program still works.
