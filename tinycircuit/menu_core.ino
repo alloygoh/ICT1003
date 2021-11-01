@@ -231,6 +231,55 @@ uint8_t editInt(uint8_t button, int *inVal, char *intName, void (*cb)()) {
   return 0;
 }
 
+//testing simple menu status function
+void (*functionViewCallBack)() = NULL;
+
+uint8_t functionView(uint8_t button, int *inVal, char *intName, void (*cb)()) {
+  if (menu_debug_print)SerialMonitorInterface.println("editInt");
+  if (!button) {
+    if (menu_debug_print)SerialMonitorInterface.println("editIntInit");
+    functionViewCallBack = cb;
+    currentDisplayState = displayStateEditor;
+    editorHandler = functionView;
+
+    displayBuffer.clearWindow(0, 8, 96, 64);
+    writeArrows();
+
+    displayBuffer.fontColor(defaultFontColor, defaultFontBG);
+    int width = displayBuffer.getPrintWidth(intName); //displays function name
+    displayBuffer.setCursor(96 / 2 - width / 2, menuTextY[2]);
+    displayBuffer.print(intName);
+
+    displayBuffer.setCursor(8, 15 - 6);
+    displayBuffer.print("Back");
+    displayBuffer.setCursor(8, 45 + 6);
+    displayBuffer.print("Activate");
+
+//runs whatever function was supplied in the functionView() call
+  } else if (button == selectButton) {
+      if (functionViewCallBack) {
+        functionViewCallBack();
+        functionViewCallBack = NULL;
+      }
+      return 1;
+  } else if (button == backButton) {
+      if (menu_debug_print)SerialMonitorInterface.println("back");
+      viewMenu(backButton);
+      return 0;
+    }
+  return 0;
+}
+//simple test program to print 9 on the screen upon function activation
+void simpleRandGen()
+{
+    int x, y;
+    x = 4;
+    y = 5;
+    displayBuffer.setCursor(24, 32);
+    displayBuffer.print(x + y);
+}
+//end of test
+
 void printCenteredAt(int y, char * text) {
   int width = displayBuffer.getPrintWidth(text);
   //displayBuffer.clearWindow(96 / 2 - width / 2 - 1, y, width + 2, 8);
@@ -286,8 +335,8 @@ void functionMenu(uint8_t selection)
     if (selection == 1)
     {
         char buffer[20];
-        strcpy_P(buffer, (PGM_P)pgm_read_word(&(menuList[functionMenuIndex].strings[selection])));
-        editInt(0, &test, buffer, testDisplay);
+        strcpy_P(buffer, (PGM_P)pgm_read_word(&(menuList[functionMenuIndex].strings[selection]))); //obtains the function name to print in the following function view
+        functionView(0, &test, buffer, simpleRandGen); // follow this convention to call your functions the last args is the function name!
     }
     if (selection == 2) 
     {
@@ -303,6 +352,7 @@ void functionMenu(uint8_t selection)
     }
 }
 
+//function test for printing text to screen
 void testDisplay()
 {
     displayBuffer.setCursor(12, 24);
