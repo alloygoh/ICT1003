@@ -18,6 +18,8 @@
 #include <vector>
 #include <thread>
 
+#include "utils.h"
+
 #include "RCDOMod.h"
 #include "MyMod/my_mod.h"
 #include "MouseMod/mouse_mod.h"

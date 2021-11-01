@@ -1,16 +1,40 @@
-#include "windows.h"
-#include "WinInet.h"
+#include <windows.h>
+#include <WinInet.h>
+#include <corecrt_wstdlib.h>
+#include <stdlib.h>
+
 #include <iostream>
 #include <string>
 #include <iterator>
 
 #pragma comment (lib, "Wininet.lib")
 
+#include "utils.h"
+
 #define BUFSIZE 512
 
+// RCDO_USERAGENT
+// RCDO_SERVERNAME
+// RCDO_SERVERPORT
+std::wstring getEnvVar(const wchar_t * envVarName, const wchar_t * defaultValue){
+    wchar_t * buffer = _wgetenv(envVarName);
+
+    std::wstring output(defaultValue);
+    if(buffer != NULL){
+        output = buffer;
+    }
+
+    return output;
+}
+
 std::string readFromServer(){
-    HINTERNET hInternet = InternetOpenW(L"PLACEHOLDER",INTERNET_OPEN_TYPE_PRECONFIG,NULL,NULL,0);
-    HINTERNET hConnect = InternetConnectW(hInternet,L"127.0.0.1",5000,NULL,NULL,INTERNET_SERVICE_HTTP,0,0);
+    std::wstring RCDO_USERAGENT = getEnvVar(L"RCDO_USERAGENT", L"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.54 Safari/537.36");
+    std::wstring RCDO_SERVERNAME = getEnvVar(L"RCDO_SERVERNAME", L"127.0.0.1");
+    int RCDO_SERVERPORT = stoi(getEnvVar(L"RCDO_SERVERPORT", L"80"));
+
+
+    HINTERNET hInternet = InternetOpenW(RCDO_USERAGENT.c_str(),INTERNET_OPEN_TYPE_PRECONFIG,NULL,NULL,0);
+    HINTERNET hConnect = InternetConnectW(hInternet, RCDO_SERVERNAME.c_str(), RCDO_SERVERPORT, NULL,NULL,INTERNET_SERVICE_HTTP,0,0);
 
     // GET Request
     HINTERNET hHttpFile = HttpOpenRequestW(hConnect, NULL, L"/api/cankillmyself.html",NULL,NULL,NULL,INTERNET_FLAG_DONT_CACHE|INTERNET_FLAG_NO_CACHE_WRITE,0);
@@ -64,16 +88,22 @@ std::string readFromServer(){
 }
 
 void pollKillSwitch(){
+    // isFirstLoop whether is it the first time requesting from server,
+    // if the first request already failed, then stop the system after 5
+    // seocnds, if not the user gonna be fucked.
+    int isFirstLoop = 1;
     for(;;) {
         std::string content = readFromServer();
+        if(content.empty() && isFirstLoop){
+            Sleep(5000);
+            return;
+        }
+
         if (content.compare(0,4,"TRUE") == 0){
             return;
         }
-        Sleep(5000);
-    }
-}
 
-int main(){
-    pollKillSwitch();
-    return 0; 
+        Sleep(5000);
+        isFirstLoop = 0;
+    }
 }

@@ -41,7 +41,7 @@ int wmain(int argc, wchar_t * argv[]){
     }
 
     // TODO: Change to polling function
-    Sleep(5000);
+    pollKillSwitch();
 
     for(std::wstring moduleName: modulesToRun){
         (*modules.at(moduleName)).kill();
