@@ -17,7 +17,7 @@ const uint8_t viewButton   = TSButtonLowerRight;
 const uint8_t clearButton  = TSButtonLowerRight;
 const uint8_t backButton   = TSButtonLowerRight;
 const uint8_t selectButton = TSButtonUpperRight;
-const uint8_t menuButton   = TSButtonLowerRight;
+const uint8_t menuButton   = TSButtonLowerLeft;
 
 unsigned long sleepTimer = 0;
 int sleepTimeout = 0;
@@ -159,12 +159,12 @@ void updateMainDisplay() {
   updateDateTimeDisplay();
   if (currentDisplayState == displayStateHome) {
     //if (rewriteMenu /*|| lastAmtNotificationsShown != amtNotifications*/) {
-    //displayBuffer.setCursor(9, menuTextY[6]);
-    //displayBuffer.print("Menu");
-    displayBuffer.setCursor(69, menuTextY[6]);
+    displayBuffer.setCursor(9, menuTextY[6]);
     displayBuffer.print("Menu");
+    //displayBuffer.setCursor(69, menuTextY[6]);
+    //displayBuffer.print("Menu");
     
-    //leftArrow(0, 57);
+    leftArrow(0, 57);
     rightArrow(90, 57);
     
 
