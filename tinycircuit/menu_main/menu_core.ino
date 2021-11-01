@@ -2,7 +2,7 @@
 
 // Change the menu font colors for 16bit color use TS_16b prefix, for 8bit use TS_8b:
 // Black, Gray, DarkGray(16b exclusive), White, Blue, DarkBlue, Red, DarkRed, Green, DarkGreen, Brown, DarkBrown, Yellow
-uint16_t defaultFontColor = TS_16b_White;
+uint16_t defaultFontColor = TS_16b_DarkGreen;
 uint16_t defaultFontBG = TS_16b_Black;
 uint16_t inactiveFontColor = TS_16b_Gray;
 uint16_t inactiveFontBG = TS_16b_Black;
@@ -179,16 +179,16 @@ uint8_t editInt(uint8_t button, int *inVal, char *intName, void (*cb)()) {
     displayBuffer.setCursor(96 / 2 - width / 2, menuTextY[2]);
     displayBuffer.print(intName);
 
-    displayBuffer.setCursor(8, 15 - 6);
-    displayBuffer.print("Back");
-    displayBuffer.setCursor(8, 45 + 6);
+    displayBuffer.setCursor(69, 15 - 3);
     displayBuffer.print("Save");
+    displayBuffer.setCursor(69, 45 + 3);
+    displayBuffer.print("Back");
 
-    displayBuffer.drawLine(1, 14,    1, 12, 0xFFFF);
-    displayBuffer.drawLine(1, 12,    6, 12, 0xFFFF);
+    //displayBuffer.drawLine(1, 14,    1, 12, 0xFFFF);
+    //displayBuffer.drawLine(1, 12,    6, 12, 0xFFFF);
 
-    displayBuffer.drawLine(1, 54,    1, 56, 0xFFFF);
-    displayBuffer.drawLine(1, 56,    6, 56, 0xFFFF);
+    //displayBuffer.drawLine(1, 54,    1, 56, 0xFFFF);
+    //displayBuffer.drawLine(1, 56,    6, 56, 0xFFFF);
 
   } else if (button == upButton) {
     if (digits[currentDigit] < 9)
@@ -247,13 +247,13 @@ uint8_t functionView(uint8_t button, int *inVal, char *intName, void (*cb)()) {
 
     displayBuffer.fontColor(defaultFontColor, defaultFontBG);
     int width = displayBuffer.getPrintWidth(intName); //displays function name
-    displayBuffer.setCursor(96 / 2 - width / 2, menuTextY[2]);
+    displayBuffer.setCursor(96 / 2 - width / 2, menuTextY[3]);
     displayBuffer.print(intName);
 
-    displayBuffer.setCursor(8, 15 - 6);
-    displayBuffer.print("Back");
-    displayBuffer.setCursor(8, 45 + 6);
-    displayBuffer.print("Activate");
+    displayBuffer.setCursor(59, 15 - 3);
+    displayBuffer.print("Enable");
+    displayBuffer.setCursor(57, 45 + 3);
+    displayBuffer.print("Return");
 
 //runs whatever function was supplied in the functionView() call
   } else if (button == selectButton) {
@@ -355,7 +355,7 @@ void functionMenu(uint8_t selection)
 //function test for printing text to screen
 void testDisplay()
 {
-    displayBuffer.setCursor(12, 24);
+    displayBuffer.setCursor(24, 24);
     displayBuffer.print("Testing Testing");
 }
 
@@ -480,11 +480,11 @@ void viewMenu(uint8_t button) {
 
 
 void writeArrows() {
-  leftArrow(0, 15 + 2);
-  rightArrow(0, 45 + 5);
+  upArrow(0, 15 + 2);
+  downArrow(0, 45 + 5);
 
-  upArrow(90, 15 + 2);
-  downArrow(90, 45 + 4);
+  rightArrow(90, 15 + 2);
+  leftArrow(90, 45 + 4);
 }
 
 

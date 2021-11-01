@@ -11,13 +11,13 @@ uint8_t menuTextY[8] = {1 * 8 - 1, 2 * 8 - 1, 3 * 8 - 1, 4 * 8 - 1, 5 * 8 - 1, 6
 
 // You can change buttons here, but you will need to change the arrow graphics elsewhere in the program to
 // match what you change here 
-const uint8_t upButton     = TSButtonUpperRight;
-const uint8_t downButton   = TSButtonLowerRight;
+const uint8_t upButton     = TSButtonUpperLeft;
+const uint8_t downButton   = TSButtonLowerLeft;
 const uint8_t viewButton   = TSButtonLowerRight;
 const uint8_t clearButton  = TSButtonLowerRight;
-const uint8_t backButton   = TSButtonUpperLeft;
-const uint8_t selectButton = TSButtonLowerLeft;
-const uint8_t menuButton   = TSButtonLowerLeft;
+const uint8_t backButton   = TSButtonLowerRight;
+const uint8_t selectButton = TSButtonUpperRight;
+const uint8_t menuButton   = TSButtonLowerRight;
 
 unsigned long sleepTimer = 0;
 int sleepTimeout = 0;
@@ -159,12 +159,12 @@ void updateMainDisplay() {
   updateDateTimeDisplay();
   if (currentDisplayState == displayStateHome) {
     //if (rewriteMenu /*|| lastAmtNotificationsShown != amtNotifications*/) {
-    displayBuffer.setCursor(9, menuTextY[6]);
+    //displayBuffer.setCursor(9, menuTextY[6]);
+    //displayBuffer.print("Menu");
+    displayBuffer.setCursor(69, menuTextY[6]);
     displayBuffer.print("Menu");
-    //displayBuffer.setCursor(70, menuTextY[6]);
-    //displayBuffer.print("Log");
     
-    leftArrow(0, 57);
+    //leftArrow(0, 57);
     rightArrow(90, 57);
     
 
