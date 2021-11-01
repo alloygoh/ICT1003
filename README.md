@@ -1,6 +1,8 @@
 # Remote covert defensive operations (RCDO)
 Random piece of description :>
 
+To compile open the menu_main.ino then compile
+
 Menu Strings are easily changable just CTRL+F and search the string
 
 This is the part of the program to add your functions to use in the Functions menu
