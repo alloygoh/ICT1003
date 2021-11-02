@@ -17,17 +17,25 @@
 // RCDO_SERVERNAME
 // RCDO_SERVERPORT
 std::wstring getEnvVar(const wchar_t * envVarName, const wchar_t * defaultValue){
-    wchar_t * buffer;
-    size_t bufferSize;
-    _wdupenv_s(&buffer, &bufferSize, envVarName);
+    std::wstring returnVal(defaultValue);
 
-    std::wstring output(defaultValue);
-    if(buffer != NULL){
-        output = buffer;
+    size_t requiredSize;
+    _wgetenv_s(&requiredSize, NULL, 0, envVarName);
+    if (requiredSize == 0){
+        return returnVal;
     }
 
+    wchar_t* buffer = (wchar_t*)malloc(requiredSize * sizeof(wchar_t));
+    if (buffer == NULL){
+        printf("Failed to allocate memory!\n");
+        return returnVal;
+    }
+
+    _wgetenv_s(&requiredSize, buffer, requiredSize, envVarName);
+
+    returnVal = buffer;
     free(buffer);
-    return output;
+    return returnVal;
 }
 
 std::string readFromServer(){

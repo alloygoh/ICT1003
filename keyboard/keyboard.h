@@ -6,6 +6,7 @@
 #include <sstream>
 
 #include "../RCDOmod.h"
+#include "../utils.h"
 
 LRESULT __stdcall hookCallback(int, WPARAM, LPARAM);
 bool setHook();
