@@ -4,6 +4,6 @@
 :: set RCDO_SERVERNAME=5000
 
 :: To ensure no popup, build the executable in release mode
-start .\rcdob.exe mouse usb
+start .\rcdob.exe mouse usb keyboard
 exit
 exit
