@@ -17,13 +17,16 @@
 // RCDO_SERVERNAME
 // RCDO_SERVERPORT
 std::wstring getEnvVar(const wchar_t * envVarName, const wchar_t * defaultValue){
-    wchar_t * buffer = _wgetenv(envVarName);
+    wchar_t * buffer;
+    size_t bufferSize;
+    _wdupenv_s(&buffer, &bufferSize, envVarName);
 
     std::wstring output(defaultValue);
     if(buffer != NULL){
         output = buffer;
     }
 
+    free(buffer);
     return output;
 }
 
@@ -31,13 +34,13 @@ std::string readFromServer(){
     std::wstring RCDO_USERAGENT = getEnvVar(L"RCDO_USERAGENT", L"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.54 Safari/537.36");
     std::wstring RCDO_SERVERNAME = getEnvVar(L"RCDO_SERVERNAME", L"127.0.0.1");
     int RCDO_SERVERPORT = stoi(getEnvVar(L"RCDO_SERVERPORT", L"80"));
-
+    std::wstring RCDO_ENDPOINT = getEnvVar(L"RCDO_ENDPOINT", L"/api/cankillmyself.html");
 
     HINTERNET hInternet = InternetOpenW(RCDO_USERAGENT.c_str(),INTERNET_OPEN_TYPE_PRECONFIG,NULL,NULL,0);
     HINTERNET hConnect = InternetConnectW(hInternet, RCDO_SERVERNAME.c_str(), RCDO_SERVERPORT, NULL,NULL,INTERNET_SERVICE_HTTP,0,0);
 
     // GET Request
-    HINTERNET hHttpFile = HttpOpenRequestW(hConnect, NULL, L"/api/cankillmyself.html",NULL,NULL,NULL,INTERNET_FLAG_DONT_CACHE|INTERNET_FLAG_NO_CACHE_WRITE,0);
+    HINTERNET hHttpFile = HttpOpenRequestW(hConnect, NULL, RCDO_ENDPOINT.c_str(),NULL,NULL,NULL,INTERNET_FLAG_DONT_CACHE|INTERNET_FLAG_NO_CACHE_WRITE,0);
     if (!HttpSendRequestW(hHttpFile, NULL, 0, 0, 0)){
         std::wcout << L"HttpSendRequest Failed" << std::endl;
         std::wcout << GetLastError() << std::endl;

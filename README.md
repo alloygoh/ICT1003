@@ -36,6 +36,7 @@ All environmental variables should look like this:
 - `RCDO_USERAGENT` - User agent when making web requests.
 - `RCDO_SERVERNAME` - Server name to query for when making web requests.
 - `RCDO_SERVERPORT` - Server port to connect to on host `RCDO_SERVERNAME`.
+- `RCDO_ENDPOINT` - Endpoint for the binary to poll
 
 ### Keyboard
 // To be filled in by author of module
