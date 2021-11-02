@@ -39,7 +39,7 @@ All environmental variables should look like this:
 - `RCDO_ENDPOINT` - Endpoint for the binary to poll
 
 ### Keyboard
-// To be filled in by author of module
+- `RCDO_KBLOCK` - Determines whether to block keyboard input or not
 
 ## Modules
 Modules are all based off the interface RCDOMod (see `RCDOMod.h` for
