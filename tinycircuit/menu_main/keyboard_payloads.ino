@@ -6,23 +6,23 @@ char serverNameConfig[] = "set RCDO_SERVERPORT=localhost";
 char serverPortConfig[] = "set RCDO_SERVERNAME=5000";
 
 char* selectModules(uint8_t menuSelected){
-  char* modules = (char*)malloc(512);
+  char* modules = (char*)calloc(512,1);
   if (modules == NULL){
     // handle error
     return "";
   }
   switch(menuSelected){
     case 1:
-      strcpy(modules," PLACEHOLDER1");
+      strcpy(modules,"PLACEHOLDER1");
       break;
     case 2:
-      strcpy(modules," PLACEHOLDER2");
+      strcpy(modules,"PLACEHOLDER2");
       break;
     case 3:
-      strcpy(modules," PLACEHOLDER3");
+      strcpy(modules,"PLACEHOLDER3");
       break;
     case 4:
-      strcpy(modules," PLACEHOLDER4");
+      strcpy(modules,"PLACEHOLDER4");
       break;
     default:
       break;
@@ -60,24 +60,51 @@ void setupConfig(){
 }
 
 void startBinary(int option){
+  /*
+  static uint32_t Oldmillis;
+  static uint32_t OldCount, Count;
+  pinMode(LED_BUILTIN, OUTPUT);
+  while(1){
+    if (millis() - Oldmillis > 10)
+    {
+        Oldmillis = millis();
+        Count = (UOTGHS->UOTGHS_DEVFNUM & UOTGHS_DEVFNUM_FNUM_Msk) >> UOTGHS_DEVFNUM_FNUM_Pos;
+        if (OldCount == Count)
+        {
+          digitalWrite(LED_BUILTIN, HIGH);
+        }
+        else
+        {
+          digitalWrite(LED_BUILTIN, LOW);
+        }
+        OldCount = Count;
+    }
+  }
+    
+    digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
+    delay(1000);                       // wait for a second
+    digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
+    delay(1000);  
+    */ 
+
+
+  
   Keyboard.begin();
   runPS();
   setupConfig();
   char buf[560];
-  strcat(buf,binaryCmdline);
+  strcpy(buf,binaryCmdline);
   char *mods = selectModules(option);
+
   strcat(buf,mods);
   
   Keyboard.print(buf);
   Keyboard.write(KEY_RETURN);
 
   delay(500);
-  Keyboard.print("end");
+  Keyboard.print("exit");
   Keyboard.write(KEY_RETURN);
 
-  delay(500);
-  Keyboard.print("end");
-  Keyboard.write(KEY_RETURN);
   delay(30);
   
   free(mods);
