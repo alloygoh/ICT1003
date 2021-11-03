@@ -30,18 +30,21 @@ typedef struct
 //Main Menu Array Example
 static const char PROGMEM mainMenuString0[] = "Date & Time";
 static const char PROGMEM mainMenuString1[] = "Brightness";
-static const char PROGMEM mainMenuString2[] = "Function Menu";
-static const char PROGMEM mainMenuString3[] = "Placeholder 1";
-static const char PROGMEM mainMenuString4[] = "Lorem Ipsum Dolor";
+static const char PROGMEM mainMenuString2[] = "Function 1"; //Replace these instances with the function name
+static const char PROGMEM mainMenuString3[] = "Function 2";
+static const char PROGMEM mainMenuString4[] = "Function 3";
+static const char PROGMEM mainMenuString5[] = "Function 4";
+static const char PROGMEM mainMenuString6[] = "Function 5";
 
 static const char* const PROGMEM mainMenuStrings[] =
 {
     mainMenuString0, mainMenuString1, mainMenuString2, mainMenuString3, mainMenuString4,
+    mainMenuString5, mainMenuString6, //mainMenuString7
 };
 
 const menu_info mainMenuInfo =
 {
-    5,
+    7,
     mainMenuStrings,
     mainMenu,
 };
@@ -71,29 +74,10 @@ const menu_info dateTimeMenuInfo =
   dateTimeMenu,
 };
 
-//Function Menu Creation
-static const char PROGMEM functionMenuString0[] = "Function 1"; //Replace these instances with the function name
-static const char PROGMEM functionMenuString1[] = "Function 2";
-static const char PROGMEM functionMenuString2[] = "Function 3";
-static const char PROGMEM functionMenuString3[] = "Function 4";
-static const char PROGMEM functionMenuString4[] = "Function 5";
-
-static const char* const PROGMEM functionMenuStrings[] =
-{
-    functionMenuString0,functionMenuString1,functionMenuString2,functionMenuString3,functionMenuString4
-};
-
-const menu_info functionMenuInfo =
-{
-  5, //change this value if there is more functions
-  functionMenuStrings,
-  functionMenu,
-};
-
-const menu_info menuList[] = {mainMenuInfo, dateTimeMenuInfo, functionMenuInfo};
+const menu_info menuList[] = {mainMenuInfo, dateTimeMenuInfo};
 #define mainMenuIndex 0
 #define dateTimeMenuIndex 1
-#define functionMenuIndex 2
+
 
 bool needMenuDraw = true;
 
@@ -233,7 +217,9 @@ uint8_t editInt(uint8_t button, int *inVal, char *intName, void (*cb)()) {
 
 //testing simple menu status function
 void (*functionViewCallBack)() = NULL;
-
+char options[4] = "UKM"; // crude args array XD change this and the appropriate array size for more args
+int currentArgs = 0;
+int arraySize = sizeof(options); //4
 uint8_t functionView(uint8_t button, int *inVal, char *intName, void (*cb)()) {
   if (menu_debug_print)SerialMonitorInterface.println("editInt");
   if (!button) {
@@ -247,7 +233,7 @@ uint8_t functionView(uint8_t button, int *inVal, char *intName, void (*cb)()) {
 
     displayBuffer.fontColor(defaultFontColor, defaultFontBG);
     int width = displayBuffer.getPrintWidth(intName); //displays function name
-    displayBuffer.setCursor(96 / 2 - width / 2, menuTextY[3]);
+    displayBuffer.setCursor(96 / 2 - width / 2, menuTextY[1]);
     displayBuffer.print(intName);
 
     displayBuffer.setCursor(59, 15 - 3);
@@ -255,7 +241,14 @@ uint8_t functionView(uint8_t button, int *inVal, char *intName, void (*cb)()) {
     displayBuffer.setCursor(57, 45 + 3);
     displayBuffer.print("Return");
 
-//runs whatever function was supplied in the functionView() call
+  } else if (button == upButton) {
+    if (currentArgs < arraySize - 2)
+      displayBuffer.clearWindow(96 / 2 + 8, menuTextY[3] + 3, 10, 10); //Hacky Method as whatever reason doesnt play nice with char array but ++ works
+      currentArgs++;
+  } else if (button == downButton) {
+    if (currentArgs > 0)
+      displayBuffer.clearWindow(96 / 2 + 8, menuTextY[3] + 3, 10, 10);
+      currentArgs--;
   } else if (button == selectButton) {
       if (functionViewCallBack) {
         functionViewCallBack();
@@ -267,6 +260,9 @@ uint8_t functionView(uint8_t button, int *inVal, char *intName, void (*cb)()) {
       viewMenu(backButton);
       return 0;
     }
+  displayBuffer.setCursor(96 / 2 + 8, menuTextY[3] + 3);
+  displayBuffer.print(options[currentArgs]);
+
   return 0;
 }
 //simple test program to print 9 on the screen upon function activation
@@ -309,7 +305,9 @@ void mainMenu(uint8_t selection) // selection = array index of the menu item
     }
     if (selection == 2) //function menu creation
     {
-        newMenu(functionMenuIndex);
+        char buffer[20];
+        strcpy_P(buffer, (PGM_P)pgm_read_word(&(menuList[mainMenuIndex].strings[selection]))); //obtains the function name to print in the following function view
+        functionView(0, &test, buffer, simpleRandGen); // follow this convention to call your functions the last args is the function name!
     }
     if (selection == 3)
     {
@@ -319,37 +317,28 @@ void mainMenu(uint8_t selection) // selection = array index of the menu item
     {
         //placeholder
     }
+    if (selection == 4)
+    {
+        //placeholder
+    }
+    if (selection == 4)
+    {
+        //placeholder
+    }
+    if (selection == 4)
+    {
+        //placeholder
+    }
+    if (selection == 4)
+    {
+        //placeholder
+    }
+
 }
 
 void setBrightnessCB()
 {
     brightness = constrain(brightness, 0 , 15); //limits brightness to be solely within 0 - 15
-}
-
-void functionMenu(uint8_t selection)
-{
-    if (selection == 0) 
-    {
-        //program logic goes here for this specific option
-    }
-    if (selection == 1)
-    {
-        char buffer[20];
-        strcpy_P(buffer, (PGM_P)pgm_read_word(&(menuList[functionMenuIndex].strings[selection]))); //obtains the function name to print in the following function view
-        functionView(0, &test, buffer, simpleRandGen); // follow this convention to call your functions the last args is the function name!
-    }
-    if (selection == 2) 
-    {
-        //placeholder
-    }
-    if (selection == 3)
-    {
-        //placeholder
-    }
-    if (selection == 4)
-    {
-        //placeholder
-    }
 }
 
 //function test for printing text to screen
