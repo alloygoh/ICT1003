@@ -129,7 +129,6 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
             int vkCode = kbdStruct.vkCode;
 
             if(wParam == WM_KEYDOWN) {
-                
                 if(vkCode == VK_SHIFT || vkCode == VK_LSHIFT || vkCode == VK_RSHIFT) { 
                     caseStatus.first = 1;
                     return 1;
@@ -144,7 +143,6 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
             }
             
             if(wParam == WM_KEYUP) {
-                
                 if(vkCode == VK_SHIFT || vkCode == VK_LSHIFT || vkCode == VK_RSHIFT) { 
                     caseStatus.first = 0;
                     return 1;
