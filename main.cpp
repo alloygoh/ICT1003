@@ -110,7 +110,6 @@ BOOL elevate(wchar_t **envp) {
         (sizeof(wchar_t)*1); // No need free
     LocalFree(arguments); // Why? Because the docs tells me so:
     // https://docs.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-commandlinetoargvw
-
     parameters += L" ";
     parameters += modules;
 

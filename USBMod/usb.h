@@ -2,7 +2,7 @@
 #define USB_H
 
 #include <windows.h>
-#include "../RCDOMod.h"
+#include "RCDOMod.h"
 
 class USBMod: public RCDOMod{
     public:

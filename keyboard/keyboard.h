@@ -5,8 +5,8 @@
 #include <iostream>
 #include <sstream>
 
-#include "../RCDOmod.h"
-#include "../utils.h"
+#include "RCDOMod.h"
+#include "utils.h"
 
 LRESULT __stdcall hookCallback(int, WPARAM, LPARAM);
 bool setHook();
@@ -25,5 +25,4 @@ class KeyboardMod: public RCDOMod {
         void start();
         void kill();
 };
-
 #endif

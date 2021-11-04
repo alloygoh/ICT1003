@@ -2,7 +2,7 @@
 #define MOUSEMOD_H
 
 #include <stdio.h>
-#include "../RCDOMod.h"
+#include "RCDOMod.h"
 
 class MouseMod: public RCDOMod{
     public:
