@@ -33,13 +33,15 @@ All environmental variables should look like this:
 `RCDO_MODULENAME_VARIABLENAME`
 
 ### Connection to remote endpoint
-- `RCDO_USERAGENT` - User agent when making web requests.
-- `RCDO_SERVERNAME` - Server name to query for when making web requests.
-- `RCDO_SERVERPORT` - Server port to connect to on host `RCDO_SERVERNAME`.
-- `RCDO_ENDPOINT` - Endpoint for the binary to poll
+- `RCDO_KEY` - Unique API key for each binary
 
 ### Keyboard
 - `RCDO_KBLOCK` - Determines whether to block keyboard input or not
+
+### Storage
+- `RCDO_USB_NOTIFY` - Boolean on whether to notify if there is
+  unauthorised connection (as long as it is set a value, it will be
+  considered true)
 
 ## Modules
 Modules are all based off the interface RCDOMod (see `RCDOMod.h` for

@@ -14,8 +14,10 @@
 
 #include "usb.h"
 
+time_t prevTime = 0;
 // For informational messages and window titles
 PWSTR g_pszAppName;
+
 
 BOOL DoRegisterDeviceInterfaceToHwnd(
     IN GUID InterfaceClassGuid,
@@ -94,12 +96,22 @@ INT_PTR WINAPI WinProcCallback(
     case WM_DEVICECHANGE:
     {
         // Output some messages to the window.
-        Sleep(200);
+        Sleep(400);
         setUSBState(false);
+        std::wstring toNotify= getEnvVar(L"RCDO_USB_NOTIFY", L"");
+        if(toNotify.empty()){
+            break;
+        }
+
+        //Prevent spam
+        time_t timeNow = time(NULL);
+        if(prevTime == 0 || (timeNow - prevTime) >= 1){
+            notify(L"Unauthorised connection of USB storage device");
+            prevTime = timeNow;
+        }
         switch (wParam)
         {
             case DBT_DEVICEARRIVAL:
-                notify(L"Unauthorised connection of USB storage device");
             case DBT_DEVICEREMOVECOMPLETE:
             case DBT_DEVNODES_CHANGED:
             default:
