@@ -20,7 +20,6 @@ void releaseKeyboard();
 extern std::map<int, std::wstring> mapSpecialKeys;
 extern HHOOK ghHook;
 extern KBDLLHOOKSTRUCT kbdStruct;
-extern std::pair<bool, bool> caseStatus;
 
 class KeyboardMod: public RCDOMod {
     public:
