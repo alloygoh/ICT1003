@@ -216,10 +216,3 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam){
 
     return CallNextHookEx(ghHook, nCode, wParam, lParam);
 }
-
-int wmain(){
-    KeyboardMod kbMod;
-    kbMod.start();
-
-    return 0;
-}
