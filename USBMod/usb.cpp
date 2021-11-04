@@ -1,12 +1,10 @@
 #include "usb.h"
-#include "register_monitor.h"
 
 #include <stdio.h>
 #include <setupapi.h>
 #include <initguid.h>
 #include <winioctl.h>
 #include <Shlobj.h>
-
 
 int USBMod::requireAdmin(){
     return 1;

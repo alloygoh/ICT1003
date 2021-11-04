@@ -36,6 +36,10 @@ void parseAndSetEnvVar(std::wstring environment){
 }
 
 int wmain(int argc, wchar_t * argv[], wchar_t **envp){
+    /* if(!checkRCDOKey()){ */
+    /*     MessageBoxW(NULL, L"RCDO_KEY not defined", L"Error", MB_OK); */
+    /*     return 1; */
+    /* } */
     int firstModPos = 1;
 
 #ifdef _DEBUG

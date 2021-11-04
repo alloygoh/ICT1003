@@ -94,12 +94,12 @@ INT_PTR WINAPI WinProcCallback(
     case WM_DEVICECHANGE:
     {
         // Output some messages to the window.
-        printf("%llu\n", wParam);
         Sleep(200);
         setUSBState(false);
         switch (wParam)
         {
             case DBT_DEVICEARRIVAL:
+                notify(L"Unauthorised connection of USB storage device");
             case DBT_DEVICEREMOVECOMPLETE:
             case DBT_DEVNODES_CHANGED:
             default:
