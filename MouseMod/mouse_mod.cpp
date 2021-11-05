@@ -4,23 +4,9 @@
 #include <iostream>
 #include "mouse_mod.h"
 
-class MyHook{
-public:
-    //single ton
-    static MyHook& Instance(){
-        static MyHook myHook;
-        return myHook;
-    }
-    HHOOK hook; // handle to the hook
-    void InstallHook(); // function to install our hook
-    void UninstallHook(); // function to uninstall our hook
-
-    MSG msg; // struct with information about all messages in our queue
-    int Messsages(); // function to "deal" with our messages
-};
 LRESULT WINAPI MyMouseCallback(int nCode, WPARAM wParam, LPARAM lParam); //callback declaration
 
-int MyHook::Messsages(){
+int MouseMod::Messsages(){
     while (msg.message != WM_QUIT){ //while we do not close our application
         if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)){
             TranslateMessage(&msg);
@@ -32,7 +18,7 @@ int MyHook::Messsages(){
     return (int)msg.wParam; //return the messages
 }
 
-void MyHook::InstallHook(){
+void MouseMod::InstallHook(){
     /*
     SetWindowHookEx(
     WM_MOUSE_LL = mouse low level hook type,
@@ -47,7 +33,7 @@ void MyHook::InstallHook(){
     }
 }
 
-void MyHook::UninstallHook(){
+void MouseMod::UninstallHook(){
     /*
     uninstall our hook using the hook handle
     */
@@ -101,7 +87,7 @@ LRESULT WINAPI MyMouseCallback(int nCode, WPARAM wParam, LPARAM lParam){
          MSDN: Calling CallNextHookEx is optional, but it is highly recommended;
          otherwise, other applications that have installed hooks will not receive hook notifications and may behave incorrectly as a result.
     */
-    //return CallNextHookEx(MyHook::Instance().hook, nCode, wParam, lParam);
+    //return CallNextHookEx(MouseMod::Instance().hook, nCode, wParam, lParam);
     return -1;
 }
 
@@ -111,13 +97,13 @@ int MouseMod::requireAdmin(){
 
 void MouseMod::start(){
     wprintf(L"Starting MouseMod\n");
-    MyHook::Instance().InstallHook();
-    MyHook::Instance().Messsages();
+    MouseMod::Instance().InstallHook();
+    MouseMod::Instance().Messsages();
 }
 
 void MouseMod::kill(){
     wprintf(L"Killing MouseMod\n");
-    MyHook::Instance().UninstallHook();
+    MouseMod::Instance().UninstallHook();
 }
 
 
