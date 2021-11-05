@@ -1,7 +1,5 @@
 //Code lovingly borrowed from :
 //https://www.unknowncheats.me/wiki/C%2B%2B:WindowsHookEx_Mouse
-#include <Windows.h>
-#include <iostream>
 #include "mouse_mod.h"
 
 LRESULT WINAPI MyMouseCallback(int nCode, WPARAM wParam, LPARAM lParam); //callback declaration
