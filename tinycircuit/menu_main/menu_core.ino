@@ -1,3 +1,8 @@
+/*  
+ *  Menu Functions and Libaries 
+ *  Written by: Ben Rose and Laveréna Wienclaw
+ */
+
 #define menu_debug_print true // Debug messages will print on Serial Monitor if True
 
 // Change the menu font colors for 16bit color use TS_16b prefix, for 8bit use TS_8b:
