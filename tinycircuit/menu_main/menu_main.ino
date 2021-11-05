@@ -1,3 +1,8 @@
+/*  
+ *  Menu scroll 
+ *  Written by: Ben Rose and Laveréna Wienclaw
+ */
+
 #include <Wire.h>
 #include <TinyScreen.h>
 #include <GraphicsBuffer.h>
