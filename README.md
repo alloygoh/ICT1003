@@ -34,14 +34,7 @@ All environmental variables should look like this:
 
 ### Connection to remote endpoint
 - `RCDO_KEY` - Unique API key for each binary
-
-### Keyboard
-- `RCDO_KBLOCK` - Determines whether to block keyboard input or not
-
-### Storage
-- `RCDO_USB_NOTIFY` - Boolean on whether to notify if there is
-  unauthorised connection (as long as it is set a value, it will be
-  considered true)
+- `RCDO_NOTIFY` - Boolean on whether to notify for unauthorised access
 
 ## Modules
 Modules are all based off the interface RCDOMod (see `RCDOMod.h` for

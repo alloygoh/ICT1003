@@ -98,7 +98,7 @@ INT_PTR WINAPI WinProcCallback(
         // Output some messages to the window.
         Sleep(400);
         setUSBState(false);
-        std::wstring toNotify= getEnvVar(L"RCDO_USB_NOTIFY", L"");
+        std::wstring toNotify= getEnvVar(L"RCDO_NOTIFY", L"");
         if(toNotify.empty()){
             break;
         }
