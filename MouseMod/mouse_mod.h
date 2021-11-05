@@ -9,6 +9,7 @@ class MouseMod: public RCDOMod{
         int requireAdmin();
         void start();
         void kill();
+	private:
 		//single ton
 		static MouseMod& Instance(){
 			static MouseMod mouseMod;
