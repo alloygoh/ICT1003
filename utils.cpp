@@ -70,7 +70,7 @@ void notify(std::wstring data){
     std::wstring notifyEndpoint = L"/api/report/breach";
 
     std::map<std::wstring, std::wstring> requestBody;
-    requestBody[L"msg"] = data;
+    requestBody[L"message"] = data;
     std::string out = sendRequest(L"POST", notifyEndpoint, &requestBody);
 }
 
