@@ -39,7 +39,6 @@ static const char PROGMEM mainMenuString4[] = "Function 5";
 static const char PROGMEM mainMenuString5[] = "Function 6";
 static const char PROGMEM mainMenuString6[] = "Function 7";
 
-
 static const char* const PROGMEM mainMenuStrings[] =
 {
   mainMenuString0, mainMenuString1, mainMenuString2, mainMenuString3, mainMenuString4,
