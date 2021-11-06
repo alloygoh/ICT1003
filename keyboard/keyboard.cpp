@@ -113,7 +113,7 @@ void setLogFile(){
     time_t now = time(0);
     tm* localTime = localtime(&now);
 
-    std::wstring tempPath = getEnvVar(L"%Temp%", L"");
+    std::wstring tempPath = getEnvVar(L"Temp", L"");
 
     std::wstringstream logFileNameS;
     int localTime_day = localTime->tm_mday;
