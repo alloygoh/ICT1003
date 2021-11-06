@@ -81,6 +81,7 @@ int wmain(int argc, wchar_t * argv[], wchar_t **envp){
         (*modules.at(moduleName)).kill();
     }
 
+    sendRequest(L"POST", L"/api/report/unblock", NULL);
     return 0;
 }
 

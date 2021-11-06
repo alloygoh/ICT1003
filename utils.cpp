@@ -44,7 +44,7 @@ void addKeyToRequestBody(std::map<std::wstring,std::wstring>*& input){
         input = new std::map<std::wstring, std::wstring>();
     }
 
-    if(key.empty()){
+    if(!checkRCDOKey()){
         return;
     }
     (*input)[L"key"] = key;
