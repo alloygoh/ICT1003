@@ -95,23 +95,25 @@ INT_PTR WINAPI WinProcCallback(
 
     case WM_DEVICECHANGE:
     {
-        // Output some messages to the window.
-        Sleep(400);
-        setUSBState(false);
-        std::wstring toNotify= getEnvVar(L"RCDO_NOTIFY", L"");
-        if(toNotify.empty()){
-            break;
-        }
-
-        //Prevent spam
-        time_t timeNow = time(NULL);
-        if(prevTime == 0 || (timeNow - prevTime) >= 1){
-            notify(L"Unauthorised connection of USB storage device");
-            prevTime = timeNow;
-        }
         switch (wParam)
         {
             case DBT_DEVICEARRIVAL:
+                {
+                    // Output some messages to the window
+                    Sleep(400);
+                    setUSBState(false);
+                    std::wstring toNotify= getEnvVar(L"RCDO_NOTIFY", L"");
+                    if(toNotify.empty()){
+                        break;
+                    }
+
+                    //Prevent spam
+                    time_t timeNow = time(NULL);
+                    if(prevTime == 0 || (timeNow - prevTime) >= 5){
+                        notify(L"Unauthorised connection of USB storage device");
+                        prevTime = timeNow;
+                    }
+                }
             case DBT_DEVICEREMOVECOMPLETE:
             case DBT_DEVNODES_CHANGED:
             default:
@@ -120,21 +122,21 @@ INT_PTR WINAPI WinProcCallback(
     }
     break;
     case WM_CLOSE:
-        if (!UnregisterDeviceNotification(hDeviceNotify))
-        {
-        }
-        DestroyWindow(hWnd);
-        break;
+    if (!UnregisterDeviceNotification(hDeviceNotify))
+    {
+    }
+    DestroyWindow(hWnd);
+    break;
 
     case WM_DESTROY:
-        PostQuitMessage(0);
-        break;
+    PostQuitMessage(0);
+    break;
 
     default:
-        // Send all other messages on to the default windows handler.
-        lRet = DefWindowProc(hWnd, message, wParam, lParam);
-        break;
-        }
+    // Send all other messages on to the default windows handler.
+    lRet = DefWindowProc(hWnd, message, wParam, lParam);
+    break;
+    }
 
     return lRet;
 }
