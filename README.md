@@ -12,13 +12,24 @@ void functionMenu(uint8_t selection)
 {
     if (selection == 1)
     {
-        char buffer[20];
-        
-        //copy function name to display in the function's page
-        strcpy_P(buffer, (PGM_P)pgm_read_word(&(menuList[functionMenuIndex].strings[selection]))); 
-        
-        // follow this convention to call your functions the last args is the function name!
-        functionView(0, &test, buffer, simpleRandGen); 
+        functionView(0, simpleRandGen); // follow this convention to call your functions the last args is the function name!
     }
+}
+```
+
+Add on to the cases for specific messages you want to print during execution
+```
+void printStatus(int x) //call this to print messages after execution
+{
+  displayBuffer.fontColor(defaultFontColor, defaultFontBG);
+
+  switch(x){
+    case(0): //add to the cases to display message on function completetion
+        printCenteredAt(menuTextY[3], "Plug In The USB!");
+        break;
+    case(1):
+        printCenteredAt(menuTextY[3], "Done!");
+        break;
+  }
 }
 ```

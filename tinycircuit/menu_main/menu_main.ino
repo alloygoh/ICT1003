@@ -1,3 +1,8 @@
+/*  
+ *  Menu scroll 
+ *  Written by: Ben Rose and Laveréna Wienclaw
+ */
+
 #include <Wire.h>
 #include <TinyScreen.h>
 #include <GraphicsBuffer.h>
@@ -14,7 +19,6 @@ uint8_t menuTextY[8] = {1 * 8 - 1, 2 * 8 - 1, 3 * 8 - 1, 4 * 8 - 1, 5 * 8 - 1, 6
 const uint8_t upButton     = TSButtonUpperLeft;
 const uint8_t downButton   = TSButtonLowerLeft;
 const uint8_t viewButton   = TSButtonLowerRight;
-const uint8_t clearButton  = TSButtonLowerRight;
 const uint8_t backButton   = TSButtonLowerRight;
 const uint8_t selectButton = TSButtonUpperRight;
 const uint8_t menuButton   = TSButtonLowerLeft;
@@ -39,9 +43,6 @@ uint8_t rewriteMenu = false;
 unsigned long mainDisplayUpdateInterval = 20;
 unsigned long lastMainDisplayUpdate = 0;
 
-int brightness = 8;
-int test = 0;
-uint8_t lastSetBrightness = 7;
 
 const uint8_t displayStateHome = 0x01;
 const uint8_t displayStateMenu = 0x02;
@@ -152,10 +153,6 @@ void initHomeScreen() {
 }
 
 void updateMainDisplay() {
-  if (lastSetBrightness != brightness) {
-    display.setBrightness(brightness);
-    lastSetBrightness = brightness;
-  }
   updateDateTimeDisplay();
   if (currentDisplayState == displayStateHome) {
     //if (rewriteMenu /*|| lastAmtNotificationsShown != amtNotifications*/) {
