@@ -39,6 +39,7 @@ static const char PROGMEM mainMenuString4[] = "Function 5";
 static const char PROGMEM mainMenuString5[] = "Function 6";
 static const char PROGMEM mainMenuString6[] = "Function 7";
 
+
 static const char* const PROGMEM mainMenuStrings[] =
 {
   mainMenuString0, mainMenuString1, mainMenuString2, mainMenuString3, mainMenuString4,
@@ -106,7 +107,10 @@ void newMenu(int8_t newIndex) {
 
 //testing simple menu status function
 void (*functionViewCallBack)() = NULL;
-int *hasRan;
+char options[4] = "UKM"; // crude args array XD change this and the appropriate array size for more args
+int currentArgs = 0;
+int arraySize = sizeof(options); //4
+//int *hasRan;
 uint8_t functionView(uint8_t button, /*int *active,*/ void (*cb)()) {
 
   if (!button) {
@@ -128,6 +132,14 @@ uint8_t functionView(uint8_t button, /*int *active,*/ void (*cb)()) {
     displayBuffer.setCursor(57, 45 + 3);
     displayBuffer.print("Return");
 
+  } else if (button == upButton) {
+    if (currentArgs < arraySize - 2)
+      displayBuffer.clearWindow(96 / 2, menuTextY[3], 10, 10); //Hacky Method as whatever reason doesnt play nice with char array but ++ works
+      currentArgs++;
+  } else if (button == downButton) {
+    if (currentArgs > 0)
+      displayBuffer.clearWindow(96 / 2, menuTextY[3], 10, 10);
+      currentArgs--;
   } else if (button == selectButton) {
     //if(*hasRan == 1){
     //  *hasRan = 0;
@@ -143,6 +155,8 @@ uint8_t functionView(uint8_t button, /*int *active,*/ void (*cb)()) {
     viewMenu(backButton);
     return 0;
   }
+  displayBuffer.setCursor(96 / 2, menuTextY[3]);
+  displayBuffer.print(options[currentArgs]);
 
   return 0;
 }
