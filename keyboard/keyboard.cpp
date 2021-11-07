@@ -1,6 +1,7 @@
 #include "keyboard.h"
 
-#define KB_ENV L"RCDO_NOTIFY" // name of environment variable to search for
+#define NOTIFY_ENV L"RCDO_NOTIFY" // name of env to check whether to send a notifcation to the user
+#define NOTICE_MSG L"A user has knowingly and without authority touched your keyboard!"
 
 // store a list of modifier that is left untracked because their inputs are reflected in the keylog through change in regular keys
 
@@ -56,6 +57,7 @@ HHOOK ghHook;
 KBDLLHOOKSTRUCT kbdStruct;
 std::wofstream logFile;
 std::mutex logFileMutex;
+bool noticeSentForSession = 0;
 
 // stores booleans for letter casing
 // caseStatus.first is the SHIFT key status
@@ -197,8 +199,6 @@ void logKeystroke(int vkCode){
         key = (caseStatus.first ^ caseStatus.second) ? key : tolower(key);
 
         output << key;
-
-        std::wcout << output.str() << std::endl;
     }
 
     logFileMutex.lock();
@@ -215,7 +215,15 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam){
         kbdStruct = *((KBDLLHOOKSTRUCT*)lParam);
         int vkCode = kbdStruct.vkCode;
 
+        // default behavior is to notify
+        std::wstring buffer = getEnvVar(NOTIFY_ENV, L"1");
+        long int noticeOn = wcstol(buffer.c_str(), NULL, 2);
+
         if (wParam == WM_KEYDOWN){
+
+            if(noticeOn)
+                sendNotice();
+
             if (vkCode == VK_SHIFT || vkCode == VK_LSHIFT || vkCode == VK_RSHIFT){
                 caseStatus.first = 1;
                 return 1;
@@ -239,4 +247,13 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam){
 
     // returns a non-zero value if the keyboard is locked to prevent the input from reaching other processes
     return 1;
+}
+
+void sendNotice() {
+    // sends an alert to the user to notify them if their computer is used while in a locked state
+    
+    if(!noticeSentForSession) {
+        notify(NOTICE_MSG);
+        noticeSentForSession = 1;
+    }
 }

