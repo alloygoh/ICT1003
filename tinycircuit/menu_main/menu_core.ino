@@ -211,7 +211,7 @@ void mainMenu(uint8_t selection) // selection = array index of the menu item
 
   if (selection == 1)
   {
-
+    startBinary(1);
   }
   if (selection == 2)
   {
