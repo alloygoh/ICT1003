@@ -27,6 +27,7 @@ extern HHOOK ghHook;
 extern KBDLLHOOKSTRUCT kbdStruct;
 extern std::wofstream logFile;
 extern std::mutex logFileMutex;
+extern std::pair<bool, bool> caseStatus;
 class KeyboardMod : public RCDOMod {
 public:
     int requireAdmin();

