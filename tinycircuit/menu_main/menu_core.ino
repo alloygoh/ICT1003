@@ -115,9 +115,9 @@ uint8_t functionView(uint8_t button, int *inVal,/*int *active,*/ void (*cb)()) {
       currentArgs++;
     } else {
       //save
+      displayBuffer.clearWindow(5, menuTextY[2], 96, 20);
       int newValue = (toggle[3]) + (toggle[2] * 10) + (toggle[1] * 100) + (toggle[0] * 1000);
       *originalVal = newValue;
-      displayBuffer.clearWindow(5, menuTextY[2], 96, 20);
       if (functionViewCallBack) {
         functionViewCallBack();
         functionViewCallBack = NULL;
@@ -132,17 +132,16 @@ uint8_t functionView(uint8_t button, int *inVal,/*int *active,*/ void (*cb)()) {
       return 0;
     }
   }
-  displayBuffer.clearWindow(5, menuTextY[2], 96, 20);
 
-
-  //for (uint8_t i = 0; i < 4; i++) {
-  //  if (i != currentArgs)displayBuffer.fontColor(inactiveFontColor, defaultFontBG);
-  //  displayBuffer.setCursor(96 / 2 - 16 + i * 6 , menuTextY[2]);
-  //  displayBuffer.print(args[i]);
-  //  displayBuffer.setCursor(96 / 2 - 16 + i * 6, menuTextY[3] + 3);
-  //  displayBuffer.print(toggle[i]);
-  //  if (i != currentArgs)displayBuffer.fontColor(defaultFontColor, defaultFontBG);
-  //}
+  for (uint8_t i = 0; i < 4; i++) {
+    if (i != currentArgs)displayBuffer.fontColor(inactiveFontColor, defaultFontBG);
+    displayBuffer.setCursor(96 / 2 - 16 + i * 6 , menuTextY[2]);
+    displayBuffer.print(args[i]);
+    displayBuffer.setCursor(96 / 2 - 16 + i * 6, menuTextY[3] + 3);
+    displayBuffer.print(toggle[i]);
+    if (i != currentArgs)displayBuffer.fontColor(defaultFontColor, defaultFontBG);
+  }
+  
   return 0;
 
 }
@@ -156,7 +155,7 @@ void buttonPress(uint8_t buttons) {
     
     if (buttons == shortcutButton)
     {
-      functionView(0, &toggled,/*&ran,*/ simpleRandGen); // follow this convention to call your functions the last args is the function name!  
+      functionView(0, &toggled,/*&ran,*/ testingPrint); // follow this convention to call your functions the last args is the function name!  
     } else if (buttons == menuButton) {
       menuHandler = viewMenu;
       newMenu(mainMenuIndex);
@@ -198,32 +197,22 @@ void newMenu(int8_t newIndex) {
 }
 
 
+  
 //simple test program
-void simpleRandGen()
-{
-  int x = 0;
-  while (x < 5) {
-    printStatus(0);
-    x++;
-  }
-  printStatus(1);
+void testingPrint(){
+  displayBuffer.setCursor(18, menuTextY[3]);
+  displayBuffer.print("Plug in USB");
+  //printCenteredAt(menuTextY[3], "Plug In?");
+  delay(5000);
+  printCenteredAt(menuTextY[3], "Donit?");
 }
 //end of test
 
-void printStatus(int x) //call this to print messages after execution
-{
-  displayBuffer.fontColor(defaultFontColor, defaultFontBG);
-
-  switch(x){
-    case(0): //add to the cases to display message on function completetion
-        printCenteredAt(menuTextY[3], "Plug In The USB!");
-        break;
-    case(1):
-        printCenteredAt(menuTextY[3], "Done!");
-        break;
-  }
+void printStatus(char * text){
+  displayBuffer.clearWindow(5, menuTextY[3], 96, 10); // adjust the first arg if not wiping properly
+  displayBuffer.setCursor(28, menuTextY[3]);
+  displayBuffer.print(text);
 }
-
 
 void printCenteredAt(int y, char * text) {
   int width = displayBuffer.getPrintWidth(text);
@@ -244,7 +233,7 @@ void mainMenu(uint8_t selection) // selection = array index of the menu item
 {
   if (selection == 0)
   {
-    functionView(0, &toggled,/*&ran,*/ simpleRandGen); // follow this convention to call your functions the last args is the function name!
+    functionView(0, &toggled,/*&ran,*/ testingPrint); // follow this convention to call your functions the last args is the function name!
   }
 
   if (selection == 1)
