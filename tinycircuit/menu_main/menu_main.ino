@@ -18,10 +18,10 @@ uint8_t menuTextY[8] = {1 * 8 - 1, 2 * 8 - 1, 3 * 8 - 1, 4 * 8 - 1, 5 * 8 - 1, 6
 // match what you change here 
 const uint8_t upButton     = TSButtonUpperLeft;
 const uint8_t downButton   = TSButtonLowerLeft;
-const uint8_t viewButton   = TSButtonLowerRight;
 const uint8_t backButton   = TSButtonLowerRight;
 const uint8_t selectButton = TSButtonUpperRight;
 const uint8_t menuButton   = TSButtonLowerLeft;
+const uint8_t shortcutButton = TSButtonLowerRight;
 
 unsigned long sleepTimer = 0;
 int sleepTimeout = 0;
@@ -43,6 +43,7 @@ uint8_t rewriteMenu = false;
 unsigned long mainDisplayUpdateInterval = 20;
 unsigned long lastMainDisplayUpdate = 0;
 
+int toggled = 0;
 
 const uint8_t displayStateHome = 0x01;
 const uint8_t displayStateMenu = 0x02;
@@ -158,8 +159,8 @@ void updateMainDisplay() {
     //if (rewriteMenu /*|| lastAmtNotificationsShown != amtNotifications*/) {
     displayBuffer.setCursor(9, menuTextY[6]);
     displayBuffer.print("Menu");
-    //displayBuffer.setCursor(69, menuTextY[6]);
-    //displayBuffer.print("Menu");
+    displayBuffer.setCursor(64, menuTextY[6]);
+    displayBuffer.print("Blocker");
     
     leftArrow(0, 57);
     rightArrow(90, 57);

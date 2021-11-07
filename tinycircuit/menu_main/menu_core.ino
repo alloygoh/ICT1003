@@ -20,7 +20,7 @@ int currentSelectionLine = 0;
 int lastSelectionLine = -1;
 
 void (*menuHandler)(uint8_t) = NULL;
-uint8_t (*editorHandler)(uint8_t, /*int*,*/ void (*)()) = NULL;
+uint8_t (*editorHandler)(uint8_t, int*, /*int*,*/ void (*)()) = NULL;
 
 //Struct for creating menus
 typedef struct
@@ -58,13 +58,106 @@ const menu_info menuList[] = {mainMenuInfo};
 
 bool needMenuDraw = true;
 
+
+//testing simple menu status function
+void (*functionViewCallBack)() = NULL;
+char args[5] = "UKMA";
+int currentVal = 0;
+// int array to hold values set
+int toggle[4];
+int currentArgs = 0;
+int arraySize = 4;
+int *originalVal;
+//int *hasRan;
+uint8_t functionView(uint8_t button, int *inVal,/*int *active,*/ void (*cb)()) {
+
+  if (!button) {
+    functionViewCallBack = cb;
+    currentDisplayState = displayStateEditor;
+    editorHandler = functionView;
+    currentArgs = 0;
+    originalVal = inVal;
+    currentVal = *originalVal;
+    toggle[3] = currentVal % 10; currentVal /= 10;
+    toggle[2] = currentVal % 10; currentVal /= 10;
+    toggle[1] = currentVal % 10; currentVal /= 10;
+    toggle[0] = currentVal % 10;
+    currentVal = *originalVal;
+
+    displayBuffer.clearWindow(0, 8, 96, 64);
+    writeArrows();
+    //hasRan = active;
+    //if (*hasRan == 1) {
+    //  displayBuffer.fontColor(defaultFontColor, defaultFontBG);
+    //  displayBuffer.setCursor(96 / 2 , menuTextY[4]);
+    //  displayBuffer.print("Currently Active!");
+    //}
+
+    displayBuffer.setCursor(59, 15 - 3);
+    displayBuffer.print("Enable");
+    displayBuffer.setCursor(57, 45 + 3);
+    displayBuffer.print("Return");
+
+
+    //if(*hasRan == 1){
+    //  *hasRan = 0;
+    //} else{
+    //    *hasRan = 1;
+    //}
+    
+    } else if (button == upButton) {
+    if (toggle[currentArgs] < 1)
+      toggle[currentArgs]++;
+  } else if (button == downButton) {
+    if (toggle[currentArgs] > 0)
+      toggle[currentArgs]--;
+  } else if (button == selectButton) {
+    if (currentArgs < arraySize - 1) {
+      currentArgs++;
+    } else {
+      //save
+      displayBuffer.clearWindow(5, menuTextY[2], 96, 20);
+      int newValue = (toggle[3]) + (toggle[2] * 10) + (toggle[1] * 100) + (toggle[0] * 1000);
+      *originalVal = newValue;
+      if (functionViewCallBack) {
+        functionViewCallBack();
+        functionViewCallBack = NULL;
+      }
+      return 1;
+    }
+  } else if (button == backButton) {
+    if (currentArgs > 0) {
+      currentArgs--;
+    } else {
+      viewMenu(backButton);
+      return 0;
+    }
+  }
+
+  // print UMKA
+  for (uint8_t i = 0; i < 4; i++) {
+    if (i != currentArgs)displayBuffer.fontColor(inactiveFontColor, defaultFontBG);
+    displayBuffer.setCursor(96 / 2 - 16 + i * 6 , menuTextY[2]);
+    displayBuffer.print(args[i]);
+    displayBuffer.setCursor(96 / 2 - 16 + i * 6, menuTextY[3] + 3);
+    displayBuffer.print(toggle[i]);
+    if (i != currentArgs)displayBuffer.fontColor(defaultFontColor, defaultFontBG);
+  }
+  
+  return 0;
+
+}
+
 void buttonPress(uint8_t buttons) {
   if (currentDisplayState == displayStateHome) {
-    if (buttons == viewButton) {
-      menuHandler = viewMenu;
-      newMenu(mainMenuIndex);
-      menuHandler(0);
-
+    //if (buttons == viewButton) {
+    //  menuHandler = viewMenu;
+    //  newMenu(mainMenuIndex);
+    //  menuHandler(0);
+    
+    if (buttons == shortcutButton)
+    {
+      functionView(0, &toggled,/*&ran,*/ startExec); // follow this convention to call your functions the last args is the function name!  
     } else if (buttons == menuButton) {
       menuHandler = viewMenu;
       newMenu(mainMenuIndex);
@@ -76,7 +169,7 @@ void buttonPress(uint8_t buttons) {
     }
   } else if (currentDisplayState == displayStateEditor) {
     if (editorHandler) {
-      editorHandler(buttons, NULL);
+      editorHandler(buttons,0, NULL);
     }
   }
 }
@@ -105,94 +198,31 @@ void newMenu(int8_t newIndex) {
   }
 }
 
-//testing simple menu status function
-void (*functionViewCallBack)() = NULL;
-char options[4] = "UKM"; // crude args array XD change this and the appropriate array size for more args
-int currentArgs = 0;
-int arraySize = sizeof(options); //4
-//int *hasRan;
-uint8_t functionView(uint8_t button, /*int *active,*/ void (*cb)()) {
 
-  if (!button) {
-    functionViewCallBack = cb;
-    currentDisplayState = displayStateEditor;
-    editorHandler = functionView;
-
-    displayBuffer.clearWindow(0, 8, 96, 64);
-    writeArrows();
-    //hasRan = active;
-    //if (*hasRan == 1) {
-    //  displayBuffer.fontColor(defaultFontColor, defaultFontBG);
-    //  displayBuffer.setCursor(96 / 2 , menuTextY[4]);
-    //  displayBuffer.print("Currently Active!");
-    //}
-
-    displayBuffer.setCursor(59, 15 - 3);
-    displayBuffer.print("Enable");
-    displayBuffer.setCursor(57, 45 + 3);
-    displayBuffer.print("Return");
-
-  } else if (button == upButton) {
-    if (currentArgs < arraySize - 2)
-      displayBuffer.clearWindow(96 / 2, menuTextY[3], 10, 10); //Hacky Method as whatever reason doesnt play nice with char array but ++ works
-      currentArgs++;
-  } else if (button == downButton) {
-    if (currentArgs > 0)
-      displayBuffer.clearWindow(96 / 2, menuTextY[3], 10, 10);
-      currentArgs--;
-  } else if (button == selectButton) {
-    //if(*hasRan == 1){
-    //  *hasRan = 0;
-    //} else{
-    //    *hasRan = 1;
-    //}
-    if (functionViewCallBack) {
-      functionViewCallBack();
-      functionViewCallBack = NULL;
-    }
-    return 1;
-  } else if (button == backButton) {
-    viewMenu(backButton);
-    return 0;
+  
+// start binary execution based on commands
+void startExec(){
+  printCenteredAt(menuTextY[3], "Plug In USB");
+  for (int i=0; i < 4; i++){
+    SerialMonitorInterface.print(toggle[i]);
   }
-  displayBuffer.setCursor(96 / 2, menuTextY[3]);
-  displayBuffer.print(options[currentArgs]);
-
-  return 0;
-}
-//simple test program
-void simpleRandGen()
-{
-  int x = 0;
-  while (x < 5) {
-    printStatus(0);
-    x++;
-  }
-  printStatus(1);
+  startBinary(toggle);
+  printCenteredAt(menuTextY[3], "Done!");
 }
 //end of test
 
-void printStatus(int x) //call this to print messages after execution
-{
-  displayBuffer.fontColor(defaultFontColor, defaultFontBG);
-
-  switch(x){
-    case(0): //add to the cases to display message on function completetion
-        printCenteredAt(menuTextY[3], "Plug In The USB!");
-        break;
-    case(1):
-        printCenteredAt(menuTextY[3], "Done!");
-        break;
-  }
+void printStatus(char * text){
+  displayBuffer.clearWindow(5, menuTextY[3], 96, 10); // adjust the first arg if not wiping properly
+  displayBuffer.setCursor(28, menuTextY[3]);
+  displayBuffer.print(text);
 }
-
 
 void printCenteredAt(int y, char * text) {
   int width = displayBuffer.getPrintWidth(text);
   //displayBuffer.clearWindow(96 / 2 - width / 2 - 1, y, width + 2, 8);
   displayBuffer.clearWindow(5, y, 96, 10); // adjust the first arg if not wiping properly
   displayBuffer.setCursor(96 / 2 - width / 2, y);
-  displayBuffer.print(text);
+  displayBuffer.print(F(text));
 }
 
 int tempOffset = 0;
@@ -206,12 +236,13 @@ void mainMenu(uint8_t selection) // selection = array index of the menu item
 {
   if (selection == 0)
   {
-    functionView(0, /*&ran,*/ simpleRandGen); // follow this convention to call your functions the last args is the function name!
+    functionView(0, &toggled,/*&ran,*/ startExec); // follow this convention to call your functions the last args is the function name!
   }
 
   if (selection == 1)
   {
-    startBinary(1);
+    //startBinary(1);
+   
   }
   if (selection == 2)
   {
