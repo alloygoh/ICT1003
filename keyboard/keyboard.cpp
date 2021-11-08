@@ -3,7 +3,32 @@
 #define NOTIFY_ENV L"RCDO_NOTIFY" // name of env to check whether to send a notifcation to the user
 #define NOTICE_MSG L"A user has knowingly and without authority touched your keyboard!"
 
-// store a list of modifier that is left untracked because their inputs are reflected in the keylog through change in regular keys
+// tracks modifier keys that create shortcuts, but do not alter the way the output looks
+// displays as such: [ALT_DOWN]A B C D E F G[ALT_UP]
+std::map<int, std::pair<std::wstring, std::wstring>> shortcutKeys;
+
+// maps keys that are hidden behind the SHIFT layer
+std::map<wchar_t, wchar_t> layeredKeys = {
+    {'`', '~'},
+    {L'1', L'!'},
+    {L'2', L'@'},
+    {L'3', L'#'},
+    {L'4', L'$'},
+    {L'5', L'%'},
+    {L'6', L'^'},
+    {L'7', L'&'},
+    {L'8', L'*'},
+    {L'9', L'('},
+    {L'0', L')'},
+    {L'[', L'{'},
+    {L']', L'}'},
+    {L'\\', L'|'},
+    {L';', L':'},
+    {L'\'', L'\"'},
+    {L',', L'<'},
+    {L'.', L'>'},
+    {L'/', L'?'}
+};
 
 // map to track keystrokes that cannot be mapped with MapVirtualKeyExW
 std::map<int, std::wstring> mapSpecialKeys = {
@@ -15,6 +40,8 @@ std::map<int, std::wstring> mapSpecialKeys = {
     {VK_LCONTROL, L"[CONTROL]"},
     {VK_RCONTROL, L"[CONTROL]"},
     {VK_MENU, L"[ALT]"},
+    {VK_LMENU, L"[ALT]"},
+    {VK_RMENU, L"[ALT]"},
     {VK_LWIN, L"[WIN]"},
     {VK_RWIN, L"[WIN]"},
     {VK_ESCAPE, L"[ESCAPE]"},
@@ -179,6 +206,21 @@ void setLogFile(){
     setLogFile();
 }
 
+wchar_t formatKey(wchar_t key){
+    // handles the transforming of keys that are modified using the SHIFT and capslock keys
+
+    if(isalpha(key))
+        return (caseStatus.first ^ caseStatus.second) ? key: tolower(key);
+    
+    
+    if(caseStatus.first) {
+        auto layeredKeyEntry = layeredKeys.find(key);
+        return (layeredKeyEntry == layeredKeys.end()) ? key : layeredKeyEntry->second;
+    }
+
+    return key;
+}
+
 void logKeystroke(int vkCode){
     // KBDLLHOOKSTRUCT stores the keyboard inputs as Virtual-Key codes
     // resolution and logging of the keystrokes is performed here
@@ -196,7 +238,7 @@ void logKeystroke(int vkCode){
         HKL kbLayout = GetKeyboardLayout(GetCurrentProcessId());
 
         wchar_t key = MapVirtualKeyExW(vkCode, MAPVK_VK_TO_CHAR, kbLayout);
-        key = (caseStatus.first ^ caseStatus.second) ? key : tolower(key);
+        key = formatKey(key);
 
         output << key;
     }
@@ -221,11 +263,16 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam){
 
         if (wParam == WM_KEYDOWN){
 
-            if(noticeOn)
+            if (noticeOn)
                 sendNotice();
 
             if (vkCode == VK_SHIFT || vkCode == VK_LSHIFT || vkCode == VK_RSHIFT){
                 caseStatus.first = 1;
+                return 1;
+            }
+
+            if (vkCode == VK_CAPITAL){
+                caseStatus.second = !caseStatus.second;
                 return 1;
             }
 
@@ -237,11 +284,6 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam){
                 caseStatus.first = 0;
                 return 1;
             }
-
-            if (vkCode == VK_CAPITAL){
-                caseStatus.second = !caseStatus.second;
-                return 1;
-            }
         }
     }
 
@@ -249,10 +291,10 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam){
     return 1;
 }
 
-void sendNotice() {
+void sendNotice(){
     // sends an alert to the user to notify them if their computer is used while in a locked state
-    
-    if(!noticeSentForSession) {
+
+    if (!noticeSentForSession){
         notify(NOTICE_MSG);
         noticeSentForSession = 1;
     }
