@@ -66,6 +66,7 @@ bool needMenuDraw = true;
 void (*functionViewCallBack)() = NULL;
 char args[5] = "UKMN";
 int currentVal = 0;
+// int array to hold values set
 int toggle[4];
 int currentArgs = 0;
 int arraySize = 4;
@@ -136,6 +137,7 @@ uint8_t functionView(uint8_t button, int *inVal,/*int *active,*/ void (*cb)()) {
     }
   }
 
+  // print UMKA
   for (uint8_t i = 0; i < 4; i++) {
     if (i != currentArgs)displayBuffer.fontColor(inactiveFontColor, defaultFontBG);
     displayBuffer.setCursor(96 / 2 - 16 + i * 6 , menuTextY[2]);
@@ -158,7 +160,7 @@ void buttonPress(uint8_t buttons) {
     
     if (buttons == shortcutButton)
     {
-      functionView(0, &toggled,/*&ran,*/ testingPrint); // follow this convention to call your functions the last args is the function name!  
+      functionView(0, &toggled,/*&ran,*/ startExec); // follow this convention to call your functions the last args is the function name!  
     } else if (buttons == menuButton) {
       menuHandler = viewMenu;
       newMenu(mainMenuIndex);
@@ -200,16 +202,20 @@ void newMenu(int8_t newIndex) {
 }
 
 
-//simple test program
-void testingPrint(){
-  printTextToScreen("PLUG IN");
-
   
-  
+// start binary execution based on commands
+void startExec(){
   displayBuffer.fontColor(TS_16b_Green, ALPHA_COLOR); //first arg to set color just follow TS_16b_color
-  delay(5000);
+
+  printCenteredAt(menuTextY[3], "Plug In USB");
+  for (int i=0; i < 4; i++){
+    SerialMonitorInterface.print(toggle[i]);
+  }
+  startBinary(toggle);
   displayBuffer.setCursor(24,menuTextY[3]);
   displayBuffer.print("Done");
+
+  //printCenteredAt(menuTextY[3], "Done!");
 }
 //end of test
 
@@ -228,8 +234,8 @@ void printCenteredAt(int y, char * text) {
   int width = displayBuffer.getPrintWidth(text);
   //displayBuffer.clearWindow(96 / 2 - width / 2 - 1, y, width + 2, 8);
   displayBuffer.clearWindow(5, y, 96, 10); // adjust the first arg if not wiping properly
-  displayBuffer.setCursor(96 / 2 - width / 2, y); 
-  displayBuffer.print(text);
+  displayBuffer.setCursor(96 / 2 - width / 2, y);
+  displayBuffer.print(F(text));
 }
 
 int tempOffset = 0;
