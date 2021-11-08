@@ -51,13 +51,13 @@ char* selectModules(int *menuSelected){
   }
 
   if (menuSelected[0]){
-    strcat(modules," usb");
-  }
-  if (menuSelected[1]){
     strcat(modules," keyboard");
   }
-  if (menuSelected[2]){
+  if (menuSelected[1]){
     strcat(modules," mouse");
+  }
+  if (menuSelected[2]){
+    strcat(modules," usb");
   }
   return modules;
 }
