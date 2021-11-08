@@ -1,8 +1,3 @@
-/*  
- *  Menu scroll 
- *  Written by: Ben Rose and Laveréna Wienclaw
- */
-
 #include <Wire.h>
 #include <TinyScreen.h>
 #include <GraphicsBuffer.h>
@@ -157,7 +152,6 @@ void initHomeScreen() {
 void updateMainDisplay() {
   updateDateTimeDisplay();
   if (currentDisplayState == displayStateHome) {
-    //if (rewriteMenu /*|| lastAmtNotificationsShown != amtNotifications*/) {
     displayBuffer.setCursor(9, menuTextY[6]);
     displayBuffer.print("Menu");
     displayBuffer.setCursor(60, menuTextY[6]);

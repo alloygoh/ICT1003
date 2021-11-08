@@ -1,9 +1,9 @@
 #include "Keyboard.h"
 
 char binaryCmdline[] = "start rcdob.exe";
-char userAgentConfig[] = "set RCDO_USERAGENT=firefox";
-char serverNameConfig[] = "set RCDO_SERVERPORT=localhost";
-char serverPortConfig[] = "set RCDO_SERVERNAME=5000";
+char notifyConfig[] = "set RCDO_NOTIFY=0";
+char apiKey[] = "set RCDO_KEY=whyare";
+
 
 
 float getVCC() {
@@ -61,9 +61,6 @@ char* selectModules(int *menuSelected){
   if (menuSelected[2]){
     strcat(modules," mouse");
   }
-  if (menuSelected[3]){
-    strcat(modules," PLACEHOLDER1");
-  }
   return modules;
 }
 
@@ -83,17 +80,16 @@ void runPS(){
   delay(500);
 }
 
-void setupConfig(){
-  Keyboard.print(userAgentConfig);
+void setupConfig(int notify){
+  Keyboard.print(apiKey);
   Keyboard.write(KEY_RETURN);
   delay(30);
 
-  Keyboard.print(serverNameConfig);
-  Keyboard.write(KEY_RETURN);
-  delay(30);
-
-  Keyboard.print(serverPortConfig);
-  Keyboard.write(KEY_RETURN);
+  if (!notify){
+    Keyboard.print(notifyConfig);
+    Keyboard.write(KEY_RETURN);
+    delay(30);    
+  }
 }
 
 void startBinary(int *option){
@@ -122,7 +118,7 @@ void startBinary(int *option){
   delay(1000);
   Keyboard.begin();
   //runPS();
-  setupConfig();
+  setupConfig(option[3]);
   char buf[560];
   strcpy(buf,binaryCmdline);
   char *mods = selectModules(option);
