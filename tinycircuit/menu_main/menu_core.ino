@@ -5,18 +5,19 @@
 #define SELECTION_USB 2
 #define SELECTION_VERBOSE 3
 
+#define mainMenuIndex 0
 
 // Change the menu font colors for 16bit color use TS_16b prefix, for 8bit use TS_8b:
 // Black, Gray, DarkGray(16b exclusive), White, Blue, DarkBlue, Red, DarkRed, Green, DarkGreen, Brown, DarkBrown, Yellow
 
-// global vars
+// color configs
 uint16_t defaultFontColor = TS_16b_DarkGreen;
 uint16_t defaultActiveFontColor =TS_16b_Blue;
 uint16_t defaultFontBG = TS_16b_Black;
 uint16_t inactiveFontColor = TS_16b_Gray;
 uint16_t inactiveFontBG = TS_16b_Black;
 
-
+// global menu vars
 unsigned long time_now = 0;
 uint8_t menuHistory[5];
 uint8_t menuHistoryIndex = 0;
@@ -26,12 +27,16 @@ int currentMenuLine = 0;
 int lastMenuLine = -1;
 int currentSelectionLine = 0;
 int lastSelectionLine = -1;
+
+bool needMenuDraw = true;
+
 // config array, defaulting notify to true
 int configSelection[4] = {0,0,0,1};
 
 
 void (*menuHandler)(uint8_t) = NULL;
 uint8_t (*editorHandler)(uint8_t, int*, /*int*,*/ void (*)()) = NULL;
+
 
 //Struct for creating menus
 typedef struct
@@ -40,6 +45,7 @@ typedef struct
   const char* const * strings; // Provide an Array of Strings per lines
   void (*selectionHandler)(uint8_t); //Handle to Menu
 } menu_info;
+
 
 //Main Menu Array 
 static const char PROGMEM mainMenuString0[] = "Keyboard Block";
@@ -62,86 +68,105 @@ const menu_info mainMenuInfo =
 };
 
 const menu_info menuList[] = {mainMenuInfo};
-#define mainMenuIndex 0
-
-bool needMenuDraw = true;
 
 
-//testing simple menu status function
-void (*functionViewCallBack)() = NULL;
-char args[5] = "UKMN";
-int currentVal = 0;
-// int array to hold values set
-int toggle[4];
-int currentArgs = 0;
-int arraySize = 4;
-int *originalVal;
-//int *hasRan;
-uint8_t functionView(uint8_t button, int *inVal, void (*cb)()) {
+// methods for main program loop
 
-  if (!button) {
-    functionViewCallBack = cb;
-    currentDisplayState = displayStateEditor;
-    editorHandler = functionView;
-    currentArgs = 0;
-    originalVal = inVal;
-    currentVal = *originalVal;
-    toggle[3] = currentVal % 10; currentVal /= 10;
-    toggle[2] = currentVal % 10; currentVal /= 10;
-    toggle[1] = currentVal % 10; currentVal /= 10;
-    toggle[0] = currentVal % 10;
-    currentVal = *originalVal;
-
-    displayBuffer.clearWindow(0, 8, 96, 64);
-    writeArrows();
-
-    displayBuffer.setCursor(59, 15 - 3);
-    displayBuffer.print("Enable");
-    displayBuffer.setCursor(57, 45 + 3);
-    displayBuffer.print("Return");
-    
-  } else if (button == upButton) {
-    if (toggle[currentArgs] < 1)
-      toggle[currentArgs]++;
-  } else if (button == downButton) {
-    if (toggle[currentArgs] > 0)
-      toggle[currentArgs]--;
-  } else if (button == selectButton) {
-    if (currentArgs < arraySize - 1) {
-      currentArgs++;
-    } else {
-      //save
-      displayBuffer.clearWindow(5, menuTextY[2], 96, 20);
-      int newValue = (toggle[3]) + (toggle[2] * 10) + (toggle[1] * 100) + (toggle[0] * 1000);
-      *originalVal = newValue;
-      if (functionViewCallBack) {
-        functionViewCallBack();
-        functionViewCallBack = NULL;
-      }
-      return 1;
-    }
-  } else if (button == backButton) {
-    if (currentArgs > 0) {
-      currentArgs--;
-    } else {
-      viewMenu(backButton);
-      return 0;
-    }
-  }
-
-  // print UMKA
-  for (uint8_t i = 0; i < 4; i++) {
-    if (i != currentArgs)displayBuffer.fontColor(inactiveFontColor, defaultFontBG);
-    displayBuffer.setCursor(96 / 2 - 16 + i * 6 , menuTextY[2]);
-    displayBuffer.print(args[i]);
-    displayBuffer.setCursor(96 / 2 - 16 + i * 6, menuTextY[3] + 3);
-    displayBuffer.print(toggle[i]);
-    if (i != currentArgs)displayBuffer.fontColor(defaultFontColor, defaultFontBG);
-  }
-  
-  return 0;
-
+uint32_t millisOffset() {
+  return millis();
 }
+
+uint32_t getSecondsCounter() {
+  return millis()/1000;
+}
+
+int requestScreenOn() {
+  sleepTimer = millisOffset();
+  if (!displayOn) {
+    setTime(counter);
+    displayOn = 1;
+    updateMainDisplay();
+    return 1;
+  }
+  return 0;
+}
+
+void checkButtons() {
+  byte buttons = display.getButtons();
+  if (buttonReleased && buttons) {
+    if (displayOn) {
+      buttonPress(buttons);
+    }
+    requestScreenOn();
+    buttonReleased = 0;
+  }
+  if (!buttonReleased && !(buttons & 0x1F)) {
+    buttonReleased = 1;
+  }
+}
+
+void initHomeScreen() {
+  displayBuffer.clearWindow(0, 1, 96, 5);
+  rewriteTime = true;
+  rewriteMenu = true;
+  updateMainDisplay();
+}
+
+void updateMainDisplay() {
+  updateDateTimeDisplay();
+  if (currentDisplayState == displayStateHome) {
+    displayBuffer.setCursor(9, menuTextY[6]);
+    displayBuffer.print("Menu");
+    
+    leftArrow(0, 57);    
+    rewriteMenu = false;
+  }
+}
+
+
+void updateDateTimeDisplay() {
+  displayBuffer.clearWindow(0, 0, 96, 8);
+  int currentDay = day();
+  lastDisplayedDay = currentDay;
+  displayBuffer.setCursor(0, -1);
+  displayBuffer.print(dayShortStr(weekday()));
+  displayBuffer.print(' ');
+  displayBuffer.print(month());
+  displayBuffer.print('/');
+  displayBuffer.print(day());
+  displayBuffer.print("  ");
+  lastHourDisplayed = hour();
+  lastMinuteDisplayed = minute();
+  lastSecondDisplayed = second();
+
+  int hour12 = lastHourDisplayed;
+  int AMPM = 1;
+  if (hour12 > 12) {
+    AMPM = 2;
+    hour12 -= 12;
+  }
+  lastHourDisplayed = hour12;
+  displayBuffer.setCursor(58, -1);
+  if (lastHourDisplayed < 10)displayBuffer.print(' ');
+  displayBuffer.print(lastHourDisplayed);
+  displayBuffer.write(':');
+  if (lastMinuteDisplayed < 10)displayBuffer.print('0');
+  displayBuffer.print(lastMinuteDisplayed);
+  displayBuffer.setCursor(80, -1);
+  if (AMPM == 2) {
+    displayBuffer.print(" PM");
+  } else {
+    displayBuffer.print(" AM");
+  }
+  rewriteTime = false;
+}
+
+void liveDisplay() 
+{
+  displayBuffer.setCursor(0, menuTextY[1]);
+  displayBuffer.print("Welcome to RCDOD");
+}
+
 
 void buttonPress(uint8_t buttons) {
   if (currentDisplayState == displayStateHome) {   
@@ -188,24 +213,6 @@ void newMenu(int8_t newIndex) {
 }
 
 
-  
-// start binary execution based on commands
-void startExec(){
-
-  startBinary(configSelection);
-
-}
-
-void printTextToScreen(char * text){
-  displayBuffer.setX(5,70); //set X and Width to iterate
-  displayBuffer.setY(8,64); // set Y and height to iterate
-  for(int i=0;i<64*64;i++){ 
-    displayBuffer.writePixel(0); //loop to write black
-  }
-  displayBuffer.setCursor(24,menuTextY[3]);//set cursor location to start printing
-  displayBuffer.print(F(text));//prints
-}
-
 void printCenteredAt(int y, char * text) {
   int width = displayBuffer.getPrintWidth(text);
   //displayBuffer.clearWindow(96 / 2 - width / 2 - 1, y, width + 2, 8);
@@ -214,12 +221,6 @@ void printCenteredAt(int y, char * text) {
   displayBuffer.print(F(text));
 }
 
-int tempOffset = 0;
-
-void saveTempCalibration() {
-  tempOffset = constrain(tempOffset, 0, 20);
-  //  writeSettings();
-}
 
 void toggleSelection(int index){
   if(configSelection[index]){
@@ -228,6 +229,8 @@ void toggleSelection(int index){
   else{
     configSelection[index]++;
   }
+  
+  // needed to refresh screen with new highlights
   needMenuDraw = true;
 }
 
@@ -252,14 +255,17 @@ void mainMenu(uint8_t selection) // selection = array index of the menu item
   }
   if (selection == 4)
   {
-    printCenteredAt(menuTextY[3], "Plug in USB!");
+    // from keyboard_payloads
     startBinary(configSelection);
-    //startExec();
+
+    // keyboard.begin somehow disconnects the screen from the board.
+    // reconnecting it with begin allows for updates to screen after keyboard functionality
     display.begin();
     printCenteredAt(menuTextY[3], "Done!");
   }
 }
 
+// vars for drawMenu
 int changeDir;
 int changeEnd;
 int changeStart;
