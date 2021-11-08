@@ -27,7 +27,7 @@ int lastMenuLine = -1;
 int currentSelectionLine = 0;
 int lastSelectionLine = -1;
 // config array, defaulting notify to true
-int selection[4] = {0,0,0,1};
+int configSelection[4] = {0,0,0,1};
 
 
 void (*menuHandler)(uint8_t) = NULL;
@@ -42,10 +42,10 @@ typedef struct
 } menu_info;
 
 //Main Menu Array 
-static const char PROGMEM mainMenuString0[] = "Keyboard Blocking";
-static const char PROGMEM mainMenuString1[] = "Mouse Blocking";
-static const char PROGMEM mainMenuString2[] = "USB Blocking"; //Replace these instances with the function name
-static const char PROGMEM mainMenuString3[] = "Verbose Logging";
+static const char PROGMEM mainMenuString0[] = "Keyboard Block";
+static const char PROGMEM mainMenuString1[] = "Mouse Block";
+static const char PROGMEM mainMenuString2[] = "USB Block"; //Replace these instances with the function name
+static const char PROGMEM mainMenuString3[] = "Breach Notify";
 static const char PROGMEM mainMenuString4[] = "Activate";
 
 
@@ -144,16 +144,8 @@ uint8_t functionView(uint8_t button, int *inVal, void (*cb)()) {
 }
 
 void buttonPress(uint8_t buttons) {
-  if (currentDisplayState == displayStateHome) {
-    //if (buttons == viewButton) {
-    //  menuHandler = viewMenu;
-    //  newMenu(mainMenuIndex);
-    //  menuHandler(0);
-    
-    if (buttons == shortcutButton)
-    {
-      functionView(0, &toggled,/*&ran,*/ startExec); // follow this convention to call your functions the last args is the function name!  
-    } else if (buttons == menuButton) {
+  if (currentDisplayState == displayStateHome) {   
+    if (buttons == menuButton) {
       menuHandler = viewMenu;
       newMenu(mainMenuIndex);
       menuHandler(0);
@@ -181,6 +173,8 @@ void newMenu(int8_t newIndex) {
     if (currentDisplayState == displayStateMenu) {
       menuHistoryIndex--;
       currentMenu = menuHistory[menuHistoryIndex];
+      SerialMonitorInterface.print("History index:");
+      SerialMonitorInterface.print(menuHistoryIndex);
     }
   }
   if (menuHistoryIndex) {
@@ -197,17 +191,9 @@ void newMenu(int8_t newIndex) {
   
 // start binary execution based on commands
 void startExec(){
-  displayBuffer.fontColor(TS_16b_Green, ALPHA_COLOR); //first arg to set color just follow TS_16b_color
 
-  //printCenteredAt(menuTextY[3], "Plug In USB");
-  for (int i=0; i < 4; i++){
-    SerialMonitorInterface.print(toggle[i]);
-  }
-  startBinary(selection);
-  //displayBuffer.setCursor(24,menuTextY[3]);
-  //displayBuffer.print("Done");
-  needMenuDraw = true;
-  printCenteredAt(menuTextY[3], "done");
+  startBinary(configSelection);
+
 }
 
 void printTextToScreen(char * text){
@@ -218,13 +204,12 @@ void printTextToScreen(char * text){
   }
   displayBuffer.setCursor(24,menuTextY[3]);//set cursor location to start printing
   displayBuffer.print(F(text));//prints
-  
 }
 
 void printCenteredAt(int y, char * text) {
   int width = displayBuffer.getPrintWidth(text);
   //displayBuffer.clearWindow(96 / 2 - width / 2 - 1, y, width + 2, 8);
-  displayBuffer.clearWindow(5, y, 96, 10); // adjust the first arg if not wiping properly
+  displayBuffer.clearWindow(0, y, 96, 10); // adjust the first arg if not wiping properly
   displayBuffer.setCursor(96 / 2 - width / 2, y);
   displayBuffer.print(F(text));
 }
@@ -237,15 +222,13 @@ void saveTempCalibration() {
 }
 
 void toggleSelection(int index){
-  if(selection[index]){
-    selection[index]--;
+  if(configSelection[index]){
+    configSelection[index]--;
   }
   else{
-    selection[index]++;
+    configSelection[index]++;
   }
   needMenuDraw = true;
-  drawMenu();
-  return;
 }
 
 
@@ -269,41 +252,28 @@ void mainMenu(uint8_t selection) // selection = array index of the menu item
   }
   if (selection == 4)
   {
-    startExec();
+    printCenteredAt(menuTextY[3], "Plug in USB!");
+    startBinary(configSelection);
+    //startExec();
+    display.begin();
+    printCenteredAt(menuTextY[3], "Done!");
   }
-  if (selection == 4)
-  {
-    //placeholder
-  }
-  if (selection == 4)
-  {
-    //placeholder
-  }
-  if (selection == 4)
-  {
-    //placeholder
-  }
-  if (selection == 4)
-  {
-    //placeholder
-  }
-
 }
+
 int changeDir;
 int changeEnd;
 int changeStart;
 int yChange;
 
 void drawMenu() {
-  //for (int yChange = changeStart; yChange != changeEnd; yChange += changeDir) {
   if (needMenuDraw) {
     needMenuDraw = false;
     displayBuffer.clearWindow(0, 7, 96, 56);
     for (int i = 0; i < menuList[currentMenu].amtLines; i++) {
-      if (i < 4 && selection[i]){
+      if (i < 4 && configSelection[i]){
         displayBuffer.fontColor(defaultActiveFontColor, ALPHA_COLOR);
       }
-      else if ((i == currentSelectionLine) && i < 4 && selection[currentSelectionLine]) {
+      else if ((i == currentSelectionLine) && i < 4 && configSelection[currentSelectionLine]) {
         displayBuffer.fontColor(defaultActiveFontColor, ALPHA_COLOR);
       } else if (i == currentSelectionLine){
         displayBuffer.fontColor(defaultFontColor, ALPHA_COLOR);
@@ -313,7 +283,7 @@ void drawMenu() {
       char buffer[20];
       strcpy_P(buffer, (PGM_P)pgm_read_word(&(menuList[currentMenu].strings[currentMenuLine + i])));
       int width = displayBuffer.getPrintWidth(buffer);
-      displayBuffer.setCursor(8, menuTextY[i]  + yChange - (currentSelectionLine * 8) + 8);
+      displayBuffer.setCursor(9, menuTextY[i]  + yChange - (currentSelectionLine * 8) + 8);
       displayBuffer.print(buffer);
     }
 
@@ -348,6 +318,8 @@ void viewMenu(uint8_t button) {
     } else if (button == selectButton) {
       menuList[currentMenu].selectionHandler(currentMenuLine + currentSelectionLine);
     } else if (button == backButton) {
+      SerialMonitorInterface.print("BACK");
+      needMenuDraw = true;
       newMenu(-1);
       if (!menuHistoryIndex)
         return;

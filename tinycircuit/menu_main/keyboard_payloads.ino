@@ -4,8 +4,6 @@ char binaryCmdline[] = "start rcdob.exe";
 char notifyConfig[] = "set RCDO_NOTIFY=0";
 char apiKey[] = "set RCDO_KEY=whyare";
 
-
-
 float getVCC() {
   SYSCTRL->VREF.reg |= SYSCTRL_VREF_BGOUTEN;
   while (ADC->STATUS.bit.SYNCBUSY == 1);

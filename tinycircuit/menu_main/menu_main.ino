@@ -154,13 +154,8 @@ void updateMainDisplay() {
   if (currentDisplayState == displayStateHome) {
     displayBuffer.setCursor(9, menuTextY[6]);
     displayBuffer.print("Menu");
-    displayBuffer.setCursor(60, menuTextY[6]);
-    displayBuffer.print("Blocker");
     
-    leftArrow(0, 57);
-    rightArrow(90, 57);
-    
-
+    leftArrow(0, 57);    
     rewriteMenu = false;
   }
 }
@@ -206,5 +201,5 @@ void updateDateTimeDisplay() {
 void liveDisplay() 
 {
   displayBuffer.setCursor(0, menuTextY[1]);
-  displayBuffer.print("VIM is superior");
+  displayBuffer.print("Welcome to RCDOD");
 }
