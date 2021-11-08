@@ -6,10 +6,13 @@
 // Change the menu font colors for 16bit color use TS_16b prefix, for 8bit use TS_8b:
 // Black, Gray, DarkGray(16b exclusive), White, Blue, DarkBlue, Red, DarkRed, Green, DarkGreen, Brown, DarkBrown, Yellow
 uint16_t defaultFontColor = TS_16b_DarkGreen;
+uint16_t defaultActiveFontColor =TS_16b_Blue;
 uint16_t defaultFontBG = TS_16b_Black;
 uint16_t inactiveFontColor = TS_16b_Gray;
 uint16_t inactiveFontBG = TS_16b_Black;
 
+
+unsigned long time_now = 0;
 uint8_t menuHistory[5];
 uint8_t menuHistoryIndex = 0;
 uint8_t menuSelectionLineHistory[5];
@@ -61,7 +64,7 @@ bool needMenuDraw = true;
 
 //testing simple menu status function
 void (*functionViewCallBack)() = NULL;
-char args[5] = "UKMA";
+char args[5] = "UKMN";
 int currentVal = 0;
 int toggle[4];
 int currentArgs = 0;
@@ -197,28 +200,35 @@ void newMenu(int8_t newIndex) {
 }
 
 
-  
 //simple test program
 void testingPrint(){
-  displayBuffer.setCursor(18, menuTextY[3]);
-  displayBuffer.print("Plug in USB");
-  //printCenteredAt(menuTextY[3], "Plug In?");
+  printTextToScreen("PLUG IN");
+
+  
+  
+  displayBuffer.fontColor(TS_16b_Green, ALPHA_COLOR); //first arg to set color just follow TS_16b_color
   delay(5000);
-  printCenteredAt(menuTextY[3], "Donit?");
+  displayBuffer.setCursor(24,menuTextY[3]);
+  displayBuffer.print("Done");
 }
 //end of test
 
-void printStatus(char * text){
-  displayBuffer.clearWindow(5, menuTextY[3], 96, 10); // adjust the first arg if not wiping properly
-  displayBuffer.setCursor(28, menuTextY[3]);
-  displayBuffer.print(text);
+void printTextToScreen(char * text){
+  displayBuffer.setX(5,70); //set X and Width to iterate
+  displayBuffer.setY(8,64); // set Y and height to iterate
+  for(int i=0;i<64*64;i++){ 
+    displayBuffer.writePixel(0); //loop to write black
+  }
+  displayBuffer.setCursor(24,menuTextY[3]);//set cursor location to start printing
+  displayBuffer.print(text);//prints
+  
 }
 
 void printCenteredAt(int y, char * text) {
   int width = displayBuffer.getPrintWidth(text);
   //displayBuffer.clearWindow(96 / 2 - width / 2 - 1, y, width + 2, 8);
   displayBuffer.clearWindow(5, y, 96, 10); // adjust the first arg if not wiping properly
-  displayBuffer.setCursor(96 / 2 - width / 2, y);
+  displayBuffer.setCursor(96 / 2 - width / 2, y); 
   displayBuffer.print(text);
 }
 
@@ -229,16 +239,19 @@ void saveTempCalibration() {
   //  writeSettings();
 }
 
+int *active = (int*) calloc(7, sizeof(int));
+
 void mainMenu(uint8_t selection) // selection = array index of the menu item
 {
   if (selection == 0)
   {
-    functionView(0, &toggled,/*&ran,*/ testingPrint); // follow this convention to call your functions the last args is the function name!
-  }
+    //functionView(0, &toggled,/*&ran,*/ testingPrint);
 
   if (selection == 1)
   {
-   
+    
+    active[selection]++; //this is to make the color change afterwards
+    testingPrint(); //u can straight call the function with args here
   }
   if (selection == 2)
   {
@@ -282,7 +295,9 @@ void drawMenu() {
     needMenuDraw = false;
     displayBuffer.clearWindow(0, 7, 96, 56);
     for (int i = 0; i < menuList[currentMenu].amtLines; i++) {
-      if (i == currentSelectionLine) {
+      if ((i == currentSelectionLine) && (active[currentSelectionLine] == 1)) {
+        displayBuffer.fontColor(defaultActiveFontColor, ALPHA_COLOR);
+      } else if (i == currentSelectionLine){
         displayBuffer.fontColor(defaultFontColor, ALPHA_COLOR);
       } else {
         displayBuffer.fontColor(inactiveFontColor, ALPHA_COLOR);

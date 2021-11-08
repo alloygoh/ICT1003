@@ -8,6 +8,7 @@
 #include <GraphicsBuffer.h>
 #include <TimeLib.h>
 
+
 GraphicsBuffer displayBuffer = GraphicsBuffer(96, 64, colorDepth16BPP);
 
 TinyScreen display = TinyScreen(TinyScreenDefault); // TinyScreen TinyShield
@@ -159,7 +160,7 @@ void updateMainDisplay() {
     //if (rewriteMenu /*|| lastAmtNotificationsShown != amtNotifications*/) {
     displayBuffer.setCursor(9, menuTextY[6]);
     displayBuffer.print("Menu");
-    displayBuffer.setCursor(64, menuTextY[6]);
+    displayBuffer.setCursor(60, menuTextY[6]);
     displayBuffer.print("Blocker");
     
     leftArrow(0, 57);
