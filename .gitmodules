@@ -1,0 +1,3 @@
+[submodule "rcdon"]
+	path = rcdon
+	url = https://github.com/georgeneokq/RCDON-Bot.git
