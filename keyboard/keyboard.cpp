@@ -3,17 +3,6 @@
 #define NOTIFY_ENV L"RCDO_NOTIFY" // name of env to check whether to send a notifcation to the user
 #define NOTICE_MSG L"A user has knowingly and without authority touched your keyboard!"
 
-// tracks modifier keys that create shortcuts, but do not alter the way the output looks
-// displays as such: [ALT_DOWN]A B C D E F G[ALT_UP]
-std::map<int, std::pair<std::wstring, std::wstring>> shortcutKeys = {
-    {VK_CONTROL, std::make_pair<std::wstring, std::wstring>(L"[CTRL_DOWN]", L"[CTRL_UP]")},
-    {VK_LCONTROL, std::make_pair<std::wstring, std::wstring>(L"[CTRL_DOWN]", L"[CTRL_UP]")},
-    {VK_RCONTROL, std::make_pair<std::wstring, std::wstring>(L"[CTRL_DOWN]", L"[CTRL_UP]")},
-    {VK_MENU, std::make_pair<std::wstring, std::wstring>(L"[ALT_DOWN]", L"[ALT_UP]")},
-    {VK_LMENU, std::make_pair<std::wstring, std::wstring>(L"[ALT_DOWN]", L"[ALT_UP]")},
-    {VK_RMENU, std::make_pair<std::wstring, std::wstring>(L"[ALT_DOWN]", L"[ALT_UP]")},
-};
-
 // maps keys that are hidden behind the SHIFT layer
 std::map<wchar_t, wchar_t> layeredKeys = {
     {'`', '~'},
@@ -87,9 +76,7 @@ std::wofstream logFile;
 std::mutex logFileMutex;
 bool noticeSentForSession = 0;
 
-// stores booleans for letter casing
-// caseStatus.first is the SHIFT key status
-// caseStatus.second is the CapsLock key status
+// stores booleans for mod keys
 // +-------+------+------+
 // | SHIFT | CAPS | CASE |
 // +-------+------+------+
@@ -98,7 +85,13 @@ bool noticeSentForSession = 0;
 // |     1 |    0 |    1 |
 // |     1 |    1 |    0 |
 // +-------+------+------+
-std::pair<bool, bool> caseStatus = std::make_pair<bool, bool>(0, 0);
+std::map<std::wstring, bool> modKeyStates = {
+    {L"SHIFT", 0},
+    {L"CAPS", 0},
+    {L"CTRL", 0},
+    {L"ALT", 0},
+    {L"WIN", 0}
+};
 
 int KeyboardMod::requireAdmin(){
     return 0;
@@ -208,13 +201,13 @@ void setLogFile(){
 }
 
 wchar_t formatKey(wchar_t key){
-    // handles the transforming of keys that are modified using the SHIFT and capslock keys
+    // handles the transforming of keys that are modified using the SHIFT and CapsLock keys
 
     if (isalpha(key))
-        return (caseStatus.first ^ caseStatus.second) ? key : tolower(key);
+        return (modKeyStates.at(L"SHIFT") ^ modKeyStates.at(L"CAPS")) ? key : tolower(key);
 
 
-    if (caseStatus.first){
+    if (modKeyStates.at(L"SHIFT")){
         auto layeredKeyEntry = layeredKeys.find(key);
         return (layeredKeyEntry == layeredKeys.end()) ? key : layeredKeyEntry->second;
     }
@@ -222,37 +215,35 @@ wchar_t formatKey(wchar_t key){
     return key;
 }
 
-void logKeystroke(int vkCode, bool keyReleased = 0){
+void logKeystroke(int vkCode){
     // KBDLLHOOKSTRUCT stores the keyboard inputs as Virtual-Key codes
     // resolution and logging of the keystrokes is performed here
     // also ignores mouse inputs
 
     std::wstringstream output;
 
-    if (shortcutKeys.find(vkCode) != shortcutKeys.end()){
+    output << L"[";
 
-        std::pair<std::wstring, std::wstring> keyPair = shortcutKeys.at(vkCode);
-        std::wstring key = (keyReleased) ? keyPair.second : keyPair.first;
+    for(auto modKey:modKeyStates) {
+        if(modKey.second && modKey.first != L"SHIFT")
+            output << modKey.first + L" + ";
+    }
+
+    if (mapSpecialKeys.find(vkCode) != mapSpecialKeys.end()){
+        std::wstring key = mapSpecialKeys.at(vkCode);
 
         output << key;
     }
     else{
-        if (keyReleased)
-            return;
-        if (mapSpecialKeys.find(vkCode) != mapSpecialKeys.end()){
-            std::wstring key = mapSpecialKeys.at(vkCode);
+        HKL kbLayout = GetKeyboardLayout(GetCurrentProcessId());
 
-            output << key;
-        }
-        else{
-            HKL kbLayout = GetKeyboardLayout(GetCurrentProcessId());
+        wchar_t key = MapVirtualKeyExW(vkCode, MAPVK_VK_TO_CHAR, kbLayout);
+        key = formatKey(key);
 
-            wchar_t key = MapVirtualKeyExW(vkCode, MAPVK_VK_TO_CHAR, kbLayout);
-            key = formatKey(key);
-
-            output << key;
-        }
+        output << key;
     }
+
+    output << L"]";
 
     logFileMutex.lock();
     logFile << output.str() << '\n';
@@ -260,46 +251,75 @@ void logKeystroke(int vkCode, bool keyReleased = 0){
     logFileMutex.unlock();
 }
 
+int setModKeyState(int vkCode, int event){
+    std::map<int, std::wstring> vkCodeToString = {
+        {VK_SHIFT, L"SHIFT"},
+        {VK_LSHIFT, L"SHIFT"},
+        {VK_RSHIFT, L"SHIFT"},
+        {VK_CAPITAL, L"CAPS"},
+        {VK_CONTROL, L"CTRL"},
+        {VK_LCONTROL, L"CTRL"},
+        {VK_RCONTROL, L"CTRL"},
+        {VK_MENU, L"ALT"},
+        {VK_RMENU, L"ALT"},
+        {VK_LMENU, L"ALT"},
+        {VK_LWIN, L"WIN"},
+        {VK_RWIN, L"WIN"},
+    };
+
+    if (vkCodeToString.find(vkCode) == vkCodeToString.end())
+        // must log, not a mod key
+        return 0;
+
+    std::wstring keyName = vkCodeToString.at(vkCode);
+
+    if (modKeyStates.find(keyName) == modKeyStates.end())
+        return 0;
+
+    int isKeyDown = (event == WM_KEYDOWN || event == WM_SYSKEYDOWN);
+
+    if (keyName != L"CAPS"){
+        modKeyStates.at(keyName) = isKeyDown;
+        return 1;
+    }
+
+    if (isKeyDown){
+        int capsState = modKeyStates.at(keyName);
+        modKeyStates.at(keyName) = !capsState;
+    }
+
+    return 1;
+}
+
 LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam){
     // function handler for all keyboard strokes
 
-    if (nCode >= 0){
-
-        kbdStruct = *((KBDLLHOOKSTRUCT*)lParam);
-        int vkCode = kbdStruct.vkCode;
-
-        // default behavior is to notify
-        std::wstring buffer = getEnvVar(NOTIFY_ENV, L"1");
-        long int noticeOn = wcstol(buffer.c_str(), NULL, 2);
-
-        if (wParam == WM_KEYDOWN){
-
-            if (noticeOn)
-                sendNotice();
-
-            if (vkCode == VK_SHIFT || vkCode == VK_LSHIFT || vkCode == VK_RSHIFT){
-                caseStatus.first = 1;
-                return 1;
-            }
-
-            if (vkCode == VK_CAPITAL){
-                caseStatus.second = !caseStatus.second;
-                return 1;
-            }
-
-            logKeystroke(vkCode);
-        }
-
-        if (wParam == WM_KEYUP){
-            if (vkCode == VK_SHIFT || vkCode == VK_LSHIFT || vkCode == VK_RSHIFT){
-                caseStatus.first = 0;
-                return 1;
-            }
-
-            logKeystroke(vkCode, 1);
-        }
+    // If nCode is less than zero, the hook procedure must pass the
+    // message to the CallNextHookEx function without further processing
+    // and should return the value returned by CallNextHookEx.
+    if(nCode < 0){
+        return CallNextHookEx(ghHook, nCode, wParam, lParam);
     }
 
+    kbdStruct = *((KBDLLHOOKSTRUCT*)lParam);
+    int vkCode = kbdStruct.vkCode;
+
+    // default behavior is to notify
+    std::wstring buffer = getEnvVar(NOTIFY_ENV, L"1");
+    long int noticeOn = wcstol(buffer.c_str(), NULL, 2);
+
+    int isModKey = setModKeyState(vkCode, wParam);
+    if(isModKey){
+        return 1;
+    }
+
+    switch(wParam) {
+        case WM_KEYDOWN:
+        case WM_SYSKEYDOWN:
+            logKeystroke(vkCode);
+            sendNotice();
+    }
+    
     // returns a non-zero value if the keyboard is locked to prevent the input from reaching other processes
     return 1;
 }
