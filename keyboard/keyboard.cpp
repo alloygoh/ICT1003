@@ -75,7 +75,7 @@ HHOOK ghHook;
 KBDLLHOOKSTRUCT kbdStruct;
 std::wfstream logFile;
 std::mutex logFileMutex;
-bool noticeThreadStarted = 0;
+HANDLE breachEvent = NULL;
 
 // stores booleans for mod keys
 // +-------+------+------+
@@ -100,7 +100,7 @@ int KeyboardMod::requireAdmin(){
 
 void KeyboardMod::start(){
 
-    if(setHook()){
+    if (setHook()){
         return;
     }
 
@@ -108,8 +108,11 @@ void KeyboardMod::start(){
 
     std::thread monitorTimeThread(setLogFile);
 
+    breachEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
+    std::thread notifyThread(sendNotice);
+
     MSG msg;
-    while(GetMessage(&msg, NULL, 0, 0)){
+    while (GetMessage(&msg, NULL, 0, 0)){
     }
 }
 
@@ -122,7 +125,7 @@ bool setHook(){
 
     // set the keyboard hook for all processes on the computer
     // runs the hookCallback function when hooked is triggered
-    if(!(ghHook = SetWindowsHookExW(WH_KEYBOARD_LL, hookCallback, NULL, 0))){
+    if (!(ghHook = SetWindowsHookExW(WH_KEYBOARD_LL, hookCallback, NULL, 0))){
         wprintf(L"%s: %d\n", "Hooked failed to install with error code", GetLastError());
 
         return 1;
@@ -142,7 +145,7 @@ void setLogFile(){
 
     logFileMutex.lock();
 
-    if(logFile)
+    if (logFile)
         logFile.close();
 
     time_t now = time(0);
@@ -162,13 +165,14 @@ void setLogFile(){
 
     std::string logFileName;
 
-    for(auto c : logFileNameS.str()){
+    for (auto c : logFileNameS.str()){
         logFileName += char(c);
     }
 
     std::cout << logFileName << std::endl;
 
     logFile.open(logFileName, std::ios_base::app);
+    logFile.seekg(0, logFile.end);
 
     logFileMutex.unlock();
 
@@ -204,11 +208,11 @@ void setLogFile(){
 wchar_t formatKey(wchar_t key){
     // handles the transforming of keys that are modified using the SHIFT and CapsLock keys
 
-    if(isalpha(key))
+    if (isalpha(key))
         return (modKeyStates.at(L"SHIFT") ^ modKeyStates.at(L"CAPS")) ? key : tolower(key);
 
 
-    if(modKeyStates.at(L"SHIFT")){
+    if (modKeyStates.at(L"SHIFT")){
         auto layeredKeyEntry = layeredKeys.find(key);
         return (layeredKeyEntry == layeredKeys.end()) ? key : layeredKeyEntry->second;
     }
@@ -225,17 +229,17 @@ void logKeystroke(int vkCode){
 
     output << L"[";
 
-    for(auto modKey : modKeyStates){
-        if(modKey.second && modKey.first != L"SHIFT")
+    for (auto modKey : modKeyStates){
+        if (modKey.second && modKey.first != L"SHIFT")
             output << modKey.first + L" + ";
     }
 
-    if(mapSpecialKeys.find(vkCode) != mapSpecialKeys.end()){
+    if (mapSpecialKeys.find(vkCode) != mapSpecialKeys.end()){
         std::wstring key = mapSpecialKeys.at(vkCode);
 
         output << key;
     }
-    else {
+    else{
         HKL kbLayout = GetKeyboardLayout(GetCurrentProcessId());
 
         wchar_t key = MapVirtualKeyExW(vkCode, MAPVK_VK_TO_CHAR, kbLayout);
@@ -268,23 +272,23 @@ int setModKeyState(int vkCode, int event){
         {VK_RWIN, L"WIN"},
     };
 
-    if(vkCodeToString.find(vkCode) == vkCodeToString.end())
+    if (vkCodeToString.find(vkCode) == vkCodeToString.end())
         // must log, not a mod key
         return 0;
 
     std::wstring keyName = vkCodeToString.at(vkCode);
 
-    if(modKeyStates.find(keyName) == modKeyStates.end())
+    if (modKeyStates.find(keyName) == modKeyStates.end())
         return 0;
 
     int isKeyDown = (event == WM_KEYDOWN || event == WM_SYSKEYDOWN);
 
-    if(keyName != L"CAPS"){
+    if (keyName != L"CAPS"){
         modKeyStates.at(keyName) = isKeyDown;
         return 1;
     }
 
-    if(isKeyDown){
+    if (isKeyDown){
         int capsState = modKeyStates.at(keyName);
         modKeyStates.at(keyName) = !capsState;
     }
@@ -298,7 +302,7 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam){
     // If nCode is less than zero, the hook procedure must pass the
     // message to the CallNextHookEx function without further processing
     // and should return the value returned by CallNextHookEx.
-    if(nCode < 0){
+    if (nCode < 0){
         return CallNextHookEx(ghHook, nCode, wParam, lParam);
     }
 
@@ -310,19 +314,15 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam){
     long int noticeOn = wcstol(buffer.c_str(), NULL, 2);
 
     int isModKey = setModKeyState(vkCode, wParam);
-    if(isModKey){
+    if (isModKey){
         return 1;
     }
 
-    switch(wParam){
+    switch (wParam){
     case WM_KEYDOWN:
     case WM_SYSKEYDOWN:
         logKeystroke(vkCode);
-
-        if(!noticeThreadStarted){
-            std::thread noticeThread(sendNotice);
-            noticeThreadStarted = 1;
-        }
+        SetEvent(breachEvent);
     }
 
     // returns a non-zero value if the keyboard is locked to prevent the input from reaching other processes
@@ -332,9 +332,11 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam){
 void sendNotice(){
     // once a keyboard breach has been detected, periodically sends notifications to the user
 
+    WaitForSingleObject(breachEvent, INFINITE);
+
     notify(NOTICE_MSG);
 
-    while(1){
+    while (1){
         time_t noticeDelay = time(0) + NOTICE_DELAY;
         tm* localTimeFuture = localtime(&noticeDelay);
 
@@ -363,10 +365,23 @@ void sendNotice(){
 
         logFileMutex.lock();
 
-        std::wstringstream keysLoggedStream;
-        
-        keysLoggedStream << logFile.rdbuf();
+        std::streampos oldOffset = logFile.tellg();
+        logFile.seekg(0, logFile.end);
+        std::streampos addedCharCount = logFile.tellg() - oldOffset;
 
-        notify(keysLoggedStream.str());
+        if (!addedCharCount){
+            continue;
+        }
+
+        logFile.seekg(addedCharCount, logFile.end);
+
+        std::wstringstream noticeStream;
+
+        noticeStream << "The following keystrokes have been recorded in the last" << NOTICE_DELAY/60 << "minutes:\n";
+        noticeStream << logFile.rdbuf();
+
+        logFileMutex.unlock();
+
+        notify(noticeStream.str());
     }
 }
