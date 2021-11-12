@@ -1,6 +1,7 @@
 #include "keyboard.h"
 
 #define NOTIFY_ENV L"RCDO_NOTIFY" // name of env to check whether to send a notifcation to the user
+#define NOTICE_DELAY 2 // delay between each keystroke notification
 #define NOTICE_MSG L"A user has knowingly and without authority touched your keyboard!"
 
 // maps keys that are hidden behind the SHIFT layer
@@ -28,53 +29,36 @@ std::map<wchar_t, wchar_t> layeredKeys = {
 
 // map to track keystrokes that cannot be mapped with MapVirtualKeyExW
 std::map<int, std::wstring> mapSpecialKeys = {
-    {VK_BACK, L"[BACKSPACE]"},
-    {VK_RETURN, L"[ENTER]"},
+    {VK_BACK, L"BACKSPACE"},
+    {VK_RETURN, L"ENTER"},
     {VK_SPACE, L"_"},
-    {VK_TAB, L"[TAB]"},
-    {VK_LWIN, L"[WIN]"},
-    {VK_RWIN, L"[WIN]"},
-    {VK_ESCAPE, L"[ESCAPE]"},
-    {VK_END, L"[END]"},
-    {VK_HOME, L"[HOME]"},
-    {VK_LEFT, L"[LEFT]"},
-    {VK_RIGHT, L"[RIGHT]"},
-    {VK_UP, L"[UP]"},
-    {VK_DOWN, L"[DOWN]"},
-    {VK_PRIOR, L"[PG_UP]"},
-    {VK_NEXT, L"[PG_DOWN]"},
-    {VK_OEM_PERIOD, L"."},
-    {VK_DECIMAL, L"."},
-    {VK_OEM_PLUS, L"+"},
-    {VK_OEM_MINUS, L"-"},
-    {VK_ADD, L"+"},
-    {VK_SUBTRACT, L"-"},
-    {VK_INSERT, L"[INSERT]"},
-    {VK_DELETE, L"[DELETE]"},
-    {VK_PRINT, L"[PRINT]"},
-    {VK_SNAPSHOT, L"[PRINTSCREEN]"},
-    {VK_SCROLL, L"[SCROLL]"},
-    {VK_PAUSE, L"[PAUSE]"},
-    {VK_NUMLOCK, L"[NUMLOCK]"},
-    {VK_F1, L"[F1]"},
-    {VK_F2, L"[F2]"},
-    {VK_F3, L"[F3]"},
-    {VK_F4, L"[F4]"},
-    {VK_F5, L"[F5]"},
-    {VK_F6, L"[F6]"},
-    {VK_F7, L"[F7]"},
-    {VK_F8, L"[F8]"},
-    {VK_F9, L"[F9]"},
-    {VK_F10, L"[F10]"},
-    {VK_F11, L"[F11]"},
-    {VK_F12, L"[F12]"},
+    {VK_INSERT, L"INSERT"},
+    {VK_DELETE, L"DELETE"},
+    {VK_PRINT, L"PRINT"},
+    {VK_SNAPSHOT, L"PRINTSCREEN"},
+    {VK_SCROLL, L"SCROLL"},
+    {VK_PAUSE, L"PAUSE"},
+    {VK_NUMLOCK, L"NUMLOCK"},
+    {VK_F1, L"F1"},
+    {VK_F2, L"F2"},
+    {VK_F3, L"F3"},
+    {VK_F4, L"F4"},
+    {VK_F5, L"F5"},
+    {VK_F6, L"F6"},
+    {VK_F7, L"F7"},
+    {VK_F8, L"F8"},
+    {VK_F9, L"F9"},
+    {VK_F10, L"F10"},
+    {VK_F11, L"F11"},
+    {VK_F12, L"F12"},
 };
 
 HHOOK ghHook;
 KBDLLHOOKSTRUCT kbdStruct;
 std::wofstream logFile;
 std::mutex logFileMutex;
-bool noticeSentForSession = 0;
+std::wstring logFileBuffer;
+HANDLE breachEvent = NULL;
 
 // stores booleans for mod keys
 // +-------+------+------+
@@ -105,7 +89,10 @@ void KeyboardMod::start(){
 
     wprintf(L"Hook successfully installed!\n");
 
-    std::thread monitorTimeThread(setLogFile);
+    std::thread timeMonitor(setLogFile);
+
+    breachEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
+    std::thread breachMonitor(sendNotice);
 
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0)){
@@ -224,8 +211,8 @@ void logKeystroke(int vkCode){
 
     output << L"[";
 
-    for(auto modKey:modKeyStates) {
-        if(modKey.second && modKey.first != L"SHIFT")
+    for (auto modKey : modKeyStates){
+        if (modKey.second && modKey.first != L"SHIFT")
             output << modKey.first + L" + ";
     }
 
@@ -246,7 +233,8 @@ void logKeystroke(int vkCode){
     output << L"]";
 
     logFileMutex.lock();
-    logFile << output.str() << '\n';
+    logFile << output.str();
+    logFileBuffer += output.str();
     logFile.flush();
     logFileMutex.unlock();
 }
@@ -297,7 +285,7 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam){
     // If nCode is less than zero, the hook procedure must pass the
     // message to the CallNextHookEx function without further processing
     // and should return the value returned by CallNextHookEx.
-    if(nCode < 0){
+    if (nCode < 0){
         return CallNextHookEx(ghHook, nCode, wParam, lParam);
     }
 
@@ -309,15 +297,15 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam){
     long int noticeOn = wcstol(buffer.c_str(), NULL, 2);
 
     int isModKey = setModKeyState(vkCode, wParam);
-    if(isModKey){
+    if (isModKey){
         return 1;
     }
 
-    switch(wParam) {
-        case WM_KEYDOWN:
-        case WM_SYSKEYDOWN:
-            logKeystroke(vkCode);
-            sendNotice();
+    switch (wParam){
+    case WM_KEYDOWN:
+    case WM_SYSKEYDOWN:
+        logKeystroke(vkCode);
+        SetEvent(breachEvent);
     }
 
     // returns a non-zero value if the keyboard is locked to prevent the input from reaching other processes
@@ -325,10 +313,52 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam){
 }
 
 void sendNotice(){
-    // sends an alert to the user to notify them if their computer is used while in a locked state
+    // once a keyboard breach has been detected, periodically sends notifications to the user
 
-    if (!noticeSentForSession){
-        notify(NOTICE_MSG);
-        noticeSentForSession = 1;
+    WaitForSingleObject(breachEvent, INFINITE);
+
+    notify(NOTICE_MSG);
+
+    while (1){
+        time_t noticeDelay = time(0) + NOTICE_DELAY;
+        tm* localTimeFuture = localtime(&noticeDelay);
+
+        SYSTEMTIME systemTime;
+        systemTime.wDay = localTimeFuture->tm_mday;
+        systemTime.wDayOfWeek = localTimeFuture->tm_wday;
+        systemTime.wMonth = 1 + localTimeFuture->tm_mon;
+        systemTime.wYear = 1900 + localTimeFuture->tm_year;
+        systemTime.wHour = localTimeFuture->tm_hour;
+        systemTime.wMinute = localTimeFuture->tm_min;
+        systemTime.wSecond = localTimeFuture->tm_sec;
+        systemTime.wMilliseconds = 0;
+
+        FILETIME fileTimeLocal;
+        SystemTimeToFileTime(&systemTime, &fileTimeLocal);
+        FILETIME fileTimeUTC;
+        LocalFileTimeToFileTime(&fileTimeLocal, &fileTimeUTC);
+
+        LARGE_INTEGER dueTime;
+        dueTime.HighPart = fileTimeUTC.dwHighDateTime;
+        dueTime.LowPart = fileTimeUTC.dwLowDateTime;
+
+        HANDLE hTimer = CreateWaitableTimer(NULL, 1, NULL);
+
+        SetWaitableTimer(hTimer, &dueTime, 0, NULL, NULL, 1);
+
+        WaitForSingleObject(hTimer, INFINITE);
+
+        logFileMutex.lock();
+
+        std::wstringstream noticeStream;
+
+        noticeStream << "The following keystrokes have been recorded in the last " << NOTICE_DELAY / 60 << " minutes:\n";
+        noticeStream << logFileBuffer;
+
+        notify(noticeStream.str());
+
+        logFileBuffer.clear();
+
+        logFileMutex.unlock();
     }
 }
