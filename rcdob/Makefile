@@ -1,14 +1,15 @@
 # https://sourceforge.net/p/mingw-w64/discussion/723798/thread/e9636bd054/
 debug:
-	g++ main.cpp MyMod/my_mod.cpp MouseMod/mouse_mod.cpp USBMod/usb.cpp \
-	USBMod/register_monitor.cpp keyboard/keyboard.cpp utils.cpp -static \
-	-municode -o watch_binary.exe -lsetupapi -lgdi32 -lwininet -D _DEBUG -I . -Wall
+	g++ main.cpp MouseMod/mouse.cpp USBMod/usb.cpp \
+	USBMod/monitor_usb_port.cpp KeyboardMod/keyboard.cpp utils.cpp -static \
+	-municode -o rcdob.exe -lsetupapi -lgdi32 -lwininet -D _DEBUG -I .  -Wall \
+	-pedantic
 
 release:
-	g++ main.cpp MyMod/my_mod.cpp MouseMod/mouse_mod.cpp USBMod/usb.cpp \
-	USBMod/register_monitor.cpp keyboard/keyboard.cpp utils.cpp -static \
-	-municode -o watch_binary.exe -lsetupapi -lgdi32 -lwininet -I . -mwindows -Wall
+	g++ main.cpp MouseMod/mouse.cpp USBMod/usb.cpp \
+	USBMod/monitor_usb_port.cpp KeyboardMod/keyboard.cpp utils.cpp -static \
+	-municode -o rcdob.exe -lsetupapi -lgdi32 -lwininet -I . -mwindows -Wall \
+	-pedantic
 
-example: debug
-	.\rcdob.exe my_mod mouse_mod
-
+deploy: release
+	move rcdob.exe ..\rcdon\bin\watch_binary.exe

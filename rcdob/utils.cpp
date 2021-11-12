@@ -50,28 +50,48 @@ void addKeyToRequestBody(std::map<std::wstring,std::wstring>*& input){
     (*input)[L"key"] = key;
 }
 
+#include <sstream>
+#include <iomanip>
+
+std::string escape_json(const std::wstring input) {
+    std::string s(input.begin(), input.end());
+
+    std::ostringstream o;
+    for (auto c = s.cbegin(); c != s.cend(); c++) {
+        if (*c == '"' || *c == '\\' || ('\x00' <= *c && *c <= '\x1f')) {
+            o << "\\u"
+              << std::hex << std::setw(4) << std::setfill('0') << (int)*c;
+        } else {
+            o << *c;
+        }
+    }
+    return o.str();
+}
+
 std::string mapToJsonString(std::map<std::wstring,std::wstring> input){
     std::map<std::wstring, std::wstring>::iterator it;
 
-    std::wstring output = L"{";
+    std::string output = "{";
     for (it = input.begin(); it != input.end(); it++){
-        output += L"\"" + it->first + L"\":";
-        output += L"\"" + it->second + L"\",";
+        output += "\"" + escape_json(it->first) + "\":";
+        output += "\"" + escape_json(it->second) + "\",";
     }
     output.pop_back();
-    output += L"}";
-    return std::string(output.begin(), output.end());
+    output += "}";
+    return output;
 }
 
 /*
  * Notifies the web server that a breach has occured
  */
-void notify(std::wstring data){
-    std::wstring notifyEndpoint = L"/api/report/breach";
+int notify(std::wstring data, std::wstring type){
+    std::wstring notifyEndpoint = L"/api/report/notify";
 
     std::map<std::wstring, std::wstring> requestBody;
     requestBody[L"message"] = data;
+    requestBody[L"type"] = type;
     std::string out = sendRequest(L"POST", notifyEndpoint, &requestBody);
+    return !out.empty();
 }
 
 /*
@@ -136,8 +156,9 @@ std::string sendRequest(std::wstring verb, std::wstring endpoint,
             copied += dwBytesRead;
         }
     }
-    std::wcout << L"[+] Bytes Read: " << std::to_wstring(copied) << std::endl;
-    std::string content((char*)data);
+    std::string content((char *)data);
+    std::wcout << L"[+] Endpoint: " << endpoint << std::endl;
+    std::wcout << L"[+] Content-Length: " << std::to_wstring(copied) << std::endl;
     std::cout << "[+] Content: " << content << std::endl;
 
     // process stuff here
@@ -149,10 +170,11 @@ std::string sendRequest(std::wstring verb, std::wstring endpoint,
 }
 
 void pollKillSwitch(){
-    // isFirstLoop whether is it the first time requesting from server,
-    // if the first request already failed, then stop the system after 5
-    // seocnds, if not the user gonna be fucked.
-    int isFirstLoop = 1;
+    // Perform an initial ping first
+    if(!notify(L"The program has started successfully")){
+        return;
+    }
+
     for(;;) {
         std::string content = sendRequest(L"POST", KILL_ENDPOINT, NULL);
         /* if(content.empty() && isFirstLoop){ */
@@ -164,7 +186,6 @@ void pollKillSwitch(){
             return;
         }
 
-        isFirstLoop = 0;
         Sleep(200);
     }
 }

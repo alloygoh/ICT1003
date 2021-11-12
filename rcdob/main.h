@@ -21,9 +21,8 @@
 #include "utils.h"
 
 #include "RCDOMod.h"
-#include "MyMod/my_mod.h"
-#include "MouseMod/mouse_mod.h"
+#include "MouseMod/mouse.h"
 #include "USBMod/usb.h"
-#include "keyboard/keyboard.h"
+#include "KeyboardMod/keyboard.h"
 
 #endif

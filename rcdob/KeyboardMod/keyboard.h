@@ -11,6 +11,7 @@
 #include <sstream>
 #include <thread>
 #include <vector>
+#include <regex>
 
 #include "RCDOMod.h"
 #include "utils.h"

