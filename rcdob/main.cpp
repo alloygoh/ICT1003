@@ -14,7 +14,11 @@ std::map<std::wstring, RCDOMod*> modules = {
     { L"usb", usbMod }
 };
 
-void runModule(std::wstring moduleName){
+void runModule(std::wstring moduleName, int toKill){
+    if(toKill){
+        (*modules.at(moduleName)).kill();
+        return;
+    }
     (*modules.at(moduleName)).start();
 }
 
@@ -69,15 +73,18 @@ int wmain(int argc, wchar_t * argv[], wchar_t **envp){
 
     // Start
     for(std::wstring moduleName: modulesToRun){
-        std::thread t(runModule, moduleName);
+        std::thread t(runModule, moduleName, 0);
         t.detach();
     }
 
     pollKillSwitch();
 
+    std::vector<std::thread> threads;
     for(std::wstring moduleName: modulesToRun){
-        (*modules.at(moduleName)).kill();
+        threads.emplace_back(runModule, moduleName, 1);
     }
+
+    for(auto &t: threads) t.join();
 
     sendRequest(L"POST", L"/api/report/unblock", NULL);
     return 0;

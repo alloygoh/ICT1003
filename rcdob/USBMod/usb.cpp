@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <setupapi.h>
 #include <initguid.h>
+#include <Usbiodef.h>
 #include <winioctl.h>
 #include <Shlobj.h>
 
@@ -11,7 +12,9 @@ int USBMod::requireAdmin(){
 }
 
 void USBMod::start(){
-    setUSBState(false);
+    setDeviceState(GUID_DEVINTERFACE_DISK, false);
+    setDeviceState(GUID_DEVINTERFACE_USB_DEVICE, false);
+    Sleep(5000);
     monitorAndBlockNewConnection();
 }
 
@@ -19,12 +22,13 @@ void USBMod::kill(){
     toKillMutex.lock();
     toKill=1;
     toKillMutex.unlock();
-    setUSBState(true);
+    setDeviceState(GUID_DEVINTERFACE_DISK, true);
+    setDeviceState(GUID_DEVINTERFACE_USB_DEVICE, true);
 }
 
 /* Enable/disable storage devices that are already installed */
-void setUSBState(BOOL bEnable){
-    HDEVINFO hDevInfo = SetupDiGetClassDevs(&GUID_DEVINTERFACE_DISK, NULL, NULL, DIGCF_DEVICEINTERFACE);
+void setDeviceState(GUID devClass, BOOL bEnable){
+    HDEVINFO hDevInfo = SetupDiGetClassDevs(&devClass, NULL, NULL, DIGCF_DEVICEINTERFACE);
     if (hDevInfo == INVALID_HANDLE_VALUE){
         printf("SetupDiGetClassDevsW error: %lu\n", GetLastError());
         return;

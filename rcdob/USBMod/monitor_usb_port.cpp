@@ -95,35 +95,24 @@ INT_PTR WINAPI WinProcCallback(
 
     case WM_DEVICECHANGE:
     {
-        Sleep(400);
-        setUSBState(false);
-        switch (wParam)
-        {
-            case DBT_DEVICEARRIVAL:
-                {
-                    toKillMutex.lock();
-                    if(toKill){
-                        break;
-                    }
-                    toKillMutex.unlock();
+        printf("DEVICECHANGE\n");
+        toKillMutex.lock();
+        if(toKill){
+            break;
+        }
+        toKillMutex.unlock();
 
-                    // Output some messages to the window
-                    std::wstring toNotify= getEnvVar(L"RCDO_NOTIFY", L"1");
-                    if(!wcstol(toNotify.c_str(), NULL, 2)){
-                        break;
-                    }
+        // Output some messages to the window
+        std::wstring toNotify= getEnvVar(L"RCDO_NOTIFY", L"1");
+        if(!wcstol(toNotify.c_str(), NULL, 2)){
+            break;
+        }
 
-                    //Prevent spam
-                    time_t timeNow = time(NULL);
-                    if(prevTime == 0 || (timeNow - prevTime) >= 5){
-                        notify(L"Unauthorised connection of USB storage device");
-                        prevTime = timeNow;
-                    }
-                }
-            case DBT_DEVICEREMOVECOMPLETE:
-            case DBT_DEVNODES_CHANGED:
-            default:
-                break;
+        //Prevent spam
+        time_t timeNow = time(NULL);
+        if(prevTime == 0 || (timeNow - prevTime) >= 5){
+            notify(L"Unauthorised connection of USB storage device");
+            prevTime = timeNow;
         }
         break;
     }

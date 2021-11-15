@@ -3,6 +3,7 @@
 
 #include <windows.h>
 #include <mutex>
+#include <thread>
 
 #include "RCDOMod.h"
 #include "utils.h"
@@ -14,7 +15,7 @@ class USBMod: public RCDOMod{
         void kill();
 };
 
-void setUSBState(BOOL bEnable);
+void setDeviceState(GUID devClass, BOOL bEnable);
 
 // register_monitor.cpp
 int monitorAndBlockNewConnection();
