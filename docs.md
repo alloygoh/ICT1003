@@ -72,9 +72,11 @@ and add an entry to it. The columns are:
 4. user_id - Leave blank, the web application will fill this up automatically.
 
 ## Using RCDO
-1. Configure the modules on the RCDOD
-1. Insert RCDOD into the computer, and press activate
-1. Watch the RCDO suite perform its tasks
+1. Send `/start` to the telegram bot
+2. Configure the modules on the RCDOD
+3. Insert RCDOD into the computer, and press activate
+4. Watch the RCDO suite perform its tasks
+5. Send `/kill` to kill the bot
 
 ## Warning
 For the first few times, please only activate one module or the other
