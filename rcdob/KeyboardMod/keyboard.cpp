@@ -1,7 +1,7 @@
 #include "keyboard.h"
 
 #define NOTIFY_ENV L"RCDO_NOTIFY" // name of env to check whether to send a notifcation to the user
-#define NOTICE_DELAY 600 // delay between each keystroke notification
+#define NOTICE_DELAY 5 // delay between each keystroke notification
 #define NOTICE_MSG L"A user has knowingly and without authority touched your keyboard!"
 
 // maps keys that are hidden behind the SHIFT layer
@@ -378,7 +378,7 @@ void sendNotice(){
 
         std::wstringstream noticeStream;
 
-        noticeStream << "The following keystrokes have been recorded in the last " << NOTICE_DELAY / 60 << " minutes:\n";
+        noticeStream << "The following keystrokes have been recorded in the last " << NOTICE_DELAY << " seconds:\n";
         noticeStream << logFileBuffer;
 
         logFileBuffer.clear();

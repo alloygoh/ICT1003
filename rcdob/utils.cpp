@@ -3,8 +3,10 @@
 #define BUFSIZE 512
 #define KILL_ENDPOINT L"/api/can-kms"
 #define USER_AGENT L"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.54 Safari/537.36"
-#define SERVER_NAME L"127.0.0.1"
-#define SERVER_PORT 5000
+
+/* These should be defined in GCC compilation options */
+/* #define SERVER_NAME L"localhost" */
+/* #define SERVER_PORT 5000 */
 
 std::wstring key;
 
@@ -91,7 +93,7 @@ int notify(std::wstring data, std::wstring type){
     requestBody[L"message"] = data;
     requestBody[L"type"] = type;
     std::string out = sendRequest(L"POST", notifyEndpoint, &requestBody);
-    return !out.empty();
+    return out == "true";
 }
 
 /*
